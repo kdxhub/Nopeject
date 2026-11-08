@@ -24,7 +24,7 @@
 "menu.sponsor" = "Sponsor";
 "menu.sponsor.note" = "Nopeject is fully open-source and free \n— sponsoring is never required for any feature.";
 "menu.sponsor.blog" = "Author's Blog Website";
-"menu.quitFrontend" = "Quit Frontend Only";
+"menu.quitFrontend" = "Hide MenuBar And Notifications";
 
 /* Preferences: Security / Eject Recovery */
 "pref.section.security" = "Security";
@@ -40,12 +40,12 @@
 "pref.auth.quit.desc" = "Verifying the administrator password is required before quitting Nopeject completely (which also stops the backend protection).";
 
 "pref.remount.title" = "Try Remounting After Unexpected Ejection";
-"pref.remount.desc" = "Automatically try to remount a protected volume ejected unexpectedly, and notify you of the result.";
+"pref.remount.desc" = "Automatically try to remount a protected volume ejected unexpectedly, and notify you of the result.\n* This BETA feature may be not so stable to work properly.";
 
 /* UI lock screen */
-"lock.title" = "Verification Required";
-"lock.text" = "“Require Password to Open” is enabled. Enter the password to continue.";
-"lock.verify" = "Verify Password";
+"lock.title" = "”Nopeject“ has been locked.";
+"lock.text" = "Need to unlock by your password.\nThe authorization will be proccessed by macOS instead of Nopeject.";
+"lock.verify" = "Enter Password";
 
 /* Authentication reason: the system dialog reads ““Nopeject” wants to” + this text, so keep verb phrases only */
 "auth.reason.toggleProtection" = "change the protection status of “%@”";
@@ -56,8 +56,8 @@
 "auth.reason.generic" = "perform an action that requires administrator authorization";
 
 /* Lock icon tooltips */
-"lock.tip.unlock" = "Locked — click to unlock";
-"lock.tip.lock" = "Unlocked — click to lock";
+"lock.tip.unlock" = "Some functions have been locked.";
+"lock.tip.lock" = "Some functions have not been locked and can be accessed.";
 
 "notify.blocked.title" = "Eject Blocked";
 "notify.blocked.body" = "“%@” is protected by Nopeject. Click this to eject it once.";
