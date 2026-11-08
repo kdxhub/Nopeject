@@ -183,7 +183,8 @@ public final class NopejectDaemon {
 
     /// 临时弹出：本次放行并立即执行推出。
     private func handleEjectOnce(message: IPCMessage, conn: SocketConnection) {
-        guard let uuid = message.data, !uuid.isEmpty else {
+        // 兼容两种负载形式：JSON 编码的字符串（带引号）或裸 UUID。
+        guard let uuid = message.decode(as: String.self) ?? message.data, !uuid.isEmpty else {
             conn.send(IPCMessage.encode(IPCMessage.ejectResult, EjectResult(ok: false, message: "missing uuid")))
             return
         }
