@@ -65,6 +65,22 @@ enum Notifier {
         UNUserNotificationCenter.current().add(request)
     }
 
+    /// 意外推出后的恢复结果通知：成功恢复 / 无法恢复（可能已断开连接）。
+    static func notifyRemountResult(ok: Bool, volumeName: String) {
+        guard isBundled else { return }
+        let content = UNMutableNotificationContent()
+        if ok {
+            content.title = L10n.t("notify.remount.ok.title")
+            content.body = L10n.tf("notify.remount.ok.body", volumeName)
+        } else {
+            content.title = L10n.t("notify.remount.fail.title")
+            content.body = L10n.tf("notify.remount.fail.body", volumeName)
+        }
+        content.sound = .default
+        let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil)
+        UNUserNotificationCenter.current().add(request)
+    }
+
     /// 合成通知附件：挂载点同款图标为主体，右下角叠加 App 图标。
     private static func volumeIconAttachment(volumePath: String?) -> UNNotificationAttachment? {
         let size: CGFloat = 144

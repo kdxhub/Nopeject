@@ -7,7 +7,6 @@
 "row.kind.external" = "External disk";
 "row.kind.network" = "Network volume";
 "row.kind.virtual" = "Disk image";
-"row.kind.network" = "Network volume";
 "row.subtitle" = "%1$@ · %2$@ / %3$@ free";
 
 "list.empty" = "No mountable volumes";
@@ -19,7 +18,7 @@
 "ctx.revealInFinder" = "Show in Finder";
 
 "menu.restartService" = "Force Restart Service";
-"menu.security" = "Privacy & Security";
+"menu.security" = "Preferences";
 "menu.about" = "About";
 "menu.quitAll" = "Quit Completely";
 "menu.sponsor" = "Sponsor";
@@ -27,21 +26,39 @@
 "menu.sponsor.blog" = "Author's Blog Website";
 "menu.quitFrontend" = "Quit Frontend Only";
 
-"perm.mode.none" = "None";
-"perm.desc.none" = "No permission protection. Anyone can edit the protection list.";
-"perm.mode.edit" = "Require Permission to Edit";
-"perm.desc.edit" = "Verifying the administrator password is required once before editing; the verification resets after saving.";
-"perm.mode.always" = "Always Require Permission";
-"perm.desc.always" = "Every edit operation — and viewing the editor — requires verifying the administrator password.";
-"perm.hint" = "Switching between modes may require the administrator authorization.";
+/* Preferences: Security / Eject Recovery */
+"pref.section.security" = "Security";
+"pref.section.recovery" = "Eject Recovery";
+
+"pref.auth.openUI.title" = "Require Password to Open";
+"pref.auth.openUI.desc" = "Verifying the administrator password is required to open the Nopeject panel.";
+"pref.auth.edit.title" = "Require Password to Edit Protection";
+"pref.auth.edit.desc" = "Verifying the administrator password is required before toggling a mount point's protection.";
+"pref.auth.eject.title" = "Require Password to Eject Temporarily";
+"pref.auth.eject.desc" = "Verifying the administrator password is required before ejecting temporarily via the context menu or notifications.";
+
+"pref.remount.title" = "Try Remounting After Unexpected Ejection";
+"pref.remount.desc" = "Automatically try to remount a protected volume ejected unexpectedly, and notify you of the result.";
+
+/* UI lock screen */
+"lock.title" = "Verification Required";
+"lock.text" = "“Require Password to Open” is enabled. Enter the password to continue.";
+"lock.verify" = "Verify Password";
 
 /* Authentication reason: the system dialog reads ““Nopeject” wants to” + this text, so keep verb phrases only */
 "auth.reason.toggleProtection" = "change the protection status of “%@”";
-"auth.reason.changeMode" = "change the privacy & security settings";
+"auth.reason.changeSettings" = "change the security settings";
+"auth.reason.openUI" = "open its control panel";
+"auth.reason.temporaryEject" = "temporarily eject “%@”";
 "auth.reason.generic" = "perform an action that requires administrator authorization";
 
 "notify.blocked.title" = "Eject Blocked";
 "notify.blocked.body" = "“%@” is protected by Nopeject. Click this to eject it once.";
+
+"notify.remount.ok.title" = "Mount Restored";
+"notify.remount.ok.body" = "“%@” has been remounted.";
+"notify.remount.fail.title" = "Mount Could Not Be Restored";
+"notify.remount.fail.body" = "“%@” could not be remounted. It may have been disconnected from this Mac.";
 
 "notify.locate.title" = "Mount Point Located";
 "notify.locate.body" = "The selected item belongs to “%@”. Open the menu bar to see it highlighted.";

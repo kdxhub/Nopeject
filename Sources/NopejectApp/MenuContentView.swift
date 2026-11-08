@@ -16,10 +16,14 @@ struct MenuContentView: View {
 
     var body: some View {
         Group {
-            switch state.screen {
-            case .main: mainScreen.transition(.opacity)
-            case .security: SecurityScreen().transition(.opacity)
-            case .about: AboutScreen().transition(.opacity)
+            if state.isUILocked {
+                lockScreen.transition(.opacity)
+            } else {
+                switch state.screen {
+                case .main: mainScreen.transition(.opacity)
+                case .preferences: PreferencesScreen().transition(.opacity)
+                case .about: AboutScreen().transition(.opacity)
+                }
             }
         }
         // fixedSize 让内部始终以自然高度布局：外层 frame 动画不会反过来
@@ -44,8 +48,40 @@ struct MenuContentView: View {
         .onAppear {
             state.refresh()
             installRightClickMonitor()
+            // 「打开界面需要密码」开启时，界面一打开即发起验证。
+            Task { await state.authorizeUIIfNeeded() }
+        }
+        // 界面关闭后重置验证状态，下次打开需重新验证。
+        .onDisappear {
+            state.uiAuthorized = false
         }
         .nopejectPanelBackground()
+    }
+
+    // MARK: - 界面锁定
+
+    /// 「打开界面需要密码」开启且未验证时显示的锁定页：隐藏全部内容，仅提供验证入口。
+    private var lockScreen: some View {
+        VStack(spacing: 10) {
+            Image(systemName: "lock.fill")
+                .font(.system(size: 34))
+                .foregroundStyle(.tint)
+            Text(L10n.t("lock.title"))
+                .font(.headline)
+            Text(L10n.t("lock.text"))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+            Button(L10n.t("lock.verify")) {
+                Task { await state.authorizeUIIfNeeded() }
+            }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.small)
+            .padding(.top, 2)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 26)
+        .padding(.horizontal, 16)
     }
 
     // MARK: - 主界面
@@ -173,9 +209,9 @@ struct MenuContentView: View {
             }
 
             Button {
-                state.screen = .security
+                state.screen = .preferences
             } label: {
-                Label(L10n.t("menu.security"), systemImage: "hand.raised")
+                Label(L10n.t("menu.security"), systemImage: "gearshape")
             }
 
             Button {
@@ -307,11 +343,11 @@ private final class RowMenuTarget: NSObject {
     }
 }
 
-// MARK: - 权限与安全性
+// MARK: - 偏好设置
 
-/// 「无 / 编辑需要权限 / 始终需要权限」三种模式的设置界面。
-/// 任何切换都需要验证管理员密码。
-struct SecurityScreen: View {
+/// 偏好设置：「安全」（按操作细分的三项密码开关）与「推出恢复」。
+/// 安全类开关的切换需验证管理员密码；恢复开关直接生效。
+struct PreferencesScreen: View {
     @ObservedObject private var state = AppState.shared
 
     var body: some View {
@@ -332,25 +368,34 @@ struct SecurityScreen: View {
 
             Divider().padding(.horizontal, 8)
 
-            VStack(alignment: .leading, spacing: 10) {
-                modeRow(
-                    mode: .none,
-                    title: L10n.t("perm.mode.none"),
-                    detail: L10n.t("perm.desc.none")
+            VStack(alignment: .leading, spacing: 0) {
+                sectionHeader(L10n.t("pref.section.security"))
+                toggleRow(
+                    title: L10n.t("pref.auth.openUI.title"),
+                    detail: L10n.t("pref.auth.openUI.desc"),
+                    keyPath: \.requireAuthOpenUI
                 )
-                modeRow(
-                    mode: .requireForEdit,
-                    title: L10n.t("perm.mode.edit"),
-                    detail: L10n.t("perm.desc.edit")
+                rowDivider
+                toggleRow(
+                    title: L10n.t("pref.auth.edit.title"),
+                    detail: L10n.t("pref.auth.edit.desc"),
+                    keyPath: \.requireAuthEdit
                 )
-                modeRow(
-                    mode: .always,
-                    title: L10n.t("perm.mode.always"),
-                    detail: L10n.t("perm.desc.always")
+                rowDivider
+                toggleRow(
+                    title: L10n.t("pref.auth.eject.title"),
+                    detail: L10n.t("pref.auth.eject.desc"),
+                    keyPath: \.requireAuthTemporaryEject
                 )
-                Text(L10n.t("perm.hint"))
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
+
+                sectionHeader(L10n.t("pref.section.recovery"))
+                    .padding(.top, 14)
+                toggleRow(
+                    title: L10n.t("pref.remount.title"),
+                    detail: L10n.t("pref.remount.desc"),
+                    keyPath: \.remountAfterUnexpectedEject,
+                    requiresAuth: false
+                )
             }
             .padding(14)
 
@@ -358,26 +403,52 @@ struct SecurityScreen: View {
         }
     }
 
-    private func modeRow(mode: PermissionMode, title: String, detail: String) -> some View {
-        Button {
-            Task { await state.changePermissionMode(to: mode) }
-        } label: {
-            HStack(alignment: .top, spacing: 8) {
-                Image(systemName: state.permissionMode == mode ? "largecircle.fill.circle" : "circle")
-                    .foregroundStyle(state.permissionMode == mode ? Color.accentColor : Color.secondary)
-                    .padding(.top, 1)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(title).fontWeight(.medium)
-                    Text(detail)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.leading)
-                }
-                Spacer()
+    private var rowDivider: some View {
+        Divider()
+            .padding(.vertical, 8)
+            .padding(.leading, 0)
+    }
+
+    private func sectionHeader(_ text: String) -> some View {
+        Text(text)
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(.secondary)
+            .padding(.bottom, 6)
+    }
+
+    /// 单个开关行；安全类开关（requiresAuth 默认 true）切换前需管理员验证。
+    private func toggleRow(
+        title: String,
+        detail: String,
+        keyPath: WritableKeyPath<NopejectConfig, Bool>,
+        requiresAuth: Bool = true
+    ) -> some View {
+        HStack(alignment: .top, spacing: 8) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .fontWeight(.medium)
+                Text(detail)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.leading)
             }
-            .contentShape(Rectangle())
+            Spacer(minLength: 8)
+            Toggle(String(), isOn: Binding(
+                get: { state.savedConfig[keyPath: keyPath] },
+                set: { newValue in
+                    Task {
+                        await state.setPreference(
+                            keyPath,
+                            to: newValue,
+                            authReason: requiresAuth ? L10n.t("auth.reason.changeSettings") : nil
+                        )
+                    }
+                }
+            ))
+            .labelsHidden()
+            .toggleStyle(.switch)
+            .controlSize(.mini)
         }
-        .buttonStyle(.plain)
     }
 }
 

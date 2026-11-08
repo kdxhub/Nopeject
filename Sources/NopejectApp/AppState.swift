@@ -14,7 +14,7 @@ final class AppState: ObservableObject {
     }
 
     enum Screen: Equatable {
-        case main, security, about
+        case main, preferences, about
     }
 
     // MARK: - 发布状态
@@ -37,7 +37,8 @@ final class AppState: ObservableObject {
     static let githubURL = URL(string: "https://github.com/kdxhub/Nopeject")!
 
     private var client = BackendClient()
-    private var editAuthorized = false
+    /// 打开界面是否已完成密码验证（界面关闭后重置）。
+    @Published var uiAuthorized = false
     /// 正在进行系统身份验证（期间禁止再次发起，避免重复弹出认证框）。
     @Published var isAuthenticating = false
     /// 等待守护进程确认的配置（configSaved 到达后整体回写）。
@@ -49,8 +50,9 @@ final class AppState: ObservableObject {
         pendingProtected != Set(savedConfig.protectedUUIDs)
     }
 
-    var permissionMode: PermissionMode {
-        savedConfig.permissionMode
+    /// 界面是否处于锁定状态（开启「打开界面需要密码」且本次打开未验证）。
+    var isUILocked: Bool {
+        savedConfig.requireAuthOpenUI && !uiAuthorized
     }
 
     // MARK: - 生命周期
@@ -126,7 +128,6 @@ final class AppState: ObservableObject {
             if let config = message.decode(as: NopejectConfig.self) {
                 savedConfig = config
                 pendingProtected = Set(config.protectedUUIDs)
-                editAuthorized = false
             }
 
         case IPCMessage.configSaved:
@@ -137,7 +138,6 @@ final class AppState: ObservableObject {
             } else {
                 savedConfig.protectedUUIDs = Array(pendingProtected).sorted()
             }
-            editAuthorized = false
             setSaveState(.saved)
             pendingSaveContinuation?.resume()
             pendingSaveContinuation = nil
@@ -145,6 +145,11 @@ final class AppState: ObservableObject {
         case IPCMessage.blocked:
             if let event = message.decode(as: BlockedEvent.self) {
                 Notifier.notifyBlocked(event: event)
+            }
+
+        case IPCMessage.remountResult:
+            if let result = message.decode(as: RemountResult.self) {
+                Notifier.notifyRemountResult(ok: result.ok, volumeName: result.volumeName)
             }
 
         case IPCMessage.ejectResult:
@@ -174,17 +179,9 @@ final class AppState: ObservableObject {
 
     // MARK: - 编辑操作
 
-    /// 切换某挂载点的保护状态（可能要求身份验证）。
+    /// 切换某挂载点的保护状态（开启「编辑保护状态需要密码」时每次都要求验证）。
     func toggle(_ mount: MountPoint, to newValue: Bool) async {
-        switch permissionMode {
-        case .none:
-            break
-        case .requireForEdit:
-            if !editAuthorized {
-                guard await authenticate(reason: String(format: L10n.t("auth.reason.toggleProtection"), mount.name)) else { return }
-                editAuthorized = true
-            }
-        case .always:
+        if savedConfig.requireAuthEdit {
             guard await authenticate(reason: String(format: L10n.t("auth.reason.toggleProtection"), mount.name)) else { return }
         }
         withAnimation(.easeInOut(duration: 0.2)) {
@@ -211,17 +208,32 @@ final class AppState: ObservableObject {
         }
     }
 
-    /// 更改权限模式（切换需验证身份，随后立即持久化）。
-    func changePermissionMode(to newMode: PermissionMode) async {
-        guard newMode != permissionMode else { return }
-        guard await authenticate(reason: L10n.t("auth.reason.changeMode")) else { return }
+    /// 更新偏好设置开关，随后立即持久化。
+    /// authReason 非空时先做管理员验证（安全类开关），取消验证则不生效。
+    func setPreference(
+        _ keyPath: WritableKeyPath<NopejectConfig, Bool>,
+        to value: Bool,
+        authReason: String? = nil
+    ) async {
+        if let authReason {
+            guard await authenticate(reason: authReason) else { return }
+        }
+        guard savedConfig[keyPath: keyPath] != value else { return }
         var config = savedConfig
-        config.permissionMode = newMode
+        config[keyPath: keyPath] = value
         config.protectedUUIDs = Array(pendingProtected).sorted()
         pendingConfig = config
         await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
             pendingSaveContinuation = continuation
             client.send(IPCMessage.encode(IPCMessage.setConfig, config))
+        }
+    }
+
+    /// 打开界面时的密码验证（开启「打开界面需要密码」时自动触发）。
+    func authorizeUIIfNeeded() async {
+        guard isUILocked, !isAuthenticating else { return }
+        if await authenticate(reason: L10n.t("auth.reason.openUI")) {
+            uiAuthorized = true
         }
     }
 
@@ -238,12 +250,17 @@ final class AppState: ObservableObject {
 
     /// 临时推出：通知守护进程一次性放行并执行推出。
     func temporaryEject(_ mount: MountPoint) {
-        temporaryEject(id: mount.id)
+        Task { await temporaryEject(id: mount.id, volumeName: mount.name) }
     }
 
     /// 按挂载点 ID（uuid 或路径）临时推出，供通知点击等没有完整 MountPoint 的场景使用。
-    func temporaryEject(id: String) {
+    /// 开启「临时推出需要密码」时先验证再放行。
+    func temporaryEject(id: String, volumeName: String? = nil) async {
         guard !id.isEmpty else { return }
+        if savedConfig.requireAuthTemporaryEject {
+            let name = volumeName ?? id
+            guard await authenticate(reason: String(format: L10n.t("auth.reason.temporaryEject"), name)) else { return }
+        }
         client.send(IPCMessage(action: IPCMessage.ejectOnce, data: id))
     }
 
@@ -261,7 +278,7 @@ final class AppState: ObservableObject {
         }
         let response = alert.runModal()
         if response == .alertFirstButtonReturn {
-            temporaryEject(id: event.uuid ?? event.path ?? "")
+            Task { await temporaryEject(id: event.uuid ?? event.path ?? "", volumeName: event.volumeName) }
         }
     }
 

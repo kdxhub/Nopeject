@@ -13,6 +13,17 @@ private let unmountApprovalCallback: UnmountApprovalCallback = { disk, context i
     return daemon.handleUnmountApproval(disk: disk)
 }
 
+/// DARegisterDiskDisappearedCallback 的 C 回调签名。
+private typealias DiskDisappearedCallback = @convention(c) (
+    DADisk, UnsafeMutableRawPointer?
+) -> Void
+
+private let diskDisappearedCallback: DiskDisappearedCallback = { disk, context in
+    guard let context else { return }
+    let daemon = Unmanaged<NopejectDaemon>.fromOpaque(context).takeUnretainedValue()
+    daemon.handleDiskDisappeared(disk: disk)
+}
+
 /// Nopeject 后端守护进程。
 ///
 /// - 注册 DiskArbitration 卸载审批回调（DARegisterDiskUnmountApprovalCallback），
@@ -25,6 +36,8 @@ public final class NopejectDaemon {
     private var session: DASession?
     private let lock = NSLock()
     private var temporarilyAllowed = Set<String>()
+    /// 已记录的主动推出（临时推出等）：对应磁盘消失时不算意外，不做恢复。
+    private var expectedEjects = Set<String>()
     private var activeConnections: [ObjectIdentifier: SocketConnection] = [:]
 
     public init() {
@@ -41,6 +54,12 @@ public final class NopejectDaemon {
                 session,
                 nil,
                 unmountApprovalCallback,
+                Unmanaged.passUnretained(self).toOpaque()
+            )
+            DARegisterDiskDisappearedCallback(
+                session,
+                nil,
+                diskDisappearedCallback,
                 Unmanaged.passUnretained(self).toOpaque()
             )
             DASessionScheduleWithRunLoop(session, CFRunLoopGetMain(), CFRunLoopMode.defaultMode.rawValue)
@@ -106,6 +125,65 @@ public final class NopejectDaemon {
 
     private func isProtected(uuid: String) -> Bool {
         store.current.protectedUUIDs.contains(uuid)
+    }
+
+    // MARK: - 意外推出恢复
+
+    /// 磁盘消失回调：受保护磁盘意外消失时按配置尝试重新挂载并通知前端结果。
+    /// 主动操作（临时推出）已记录豁免，不算意外。
+    func handleDiskDisappeared(disk: DADisk) {
+        guard store.current.remountAfterUnexpectedEject,
+              let desc = DADiskCopyDescription(disk) as? [String: Any],
+              let uuid = desc[kDADiskDescriptionVolumeUUIDKey as String]
+                  .map({ unsafeDowncast($0 as AnyObject, to: CFUUID.self) })
+                  .map({ CFUUIDCreateString(kCFAllocatorDefault, $0) as String }),
+              isProtected(uuid: uuid) else { return }
+
+        lock.lock()
+        let expected = expectedEjects.remove(uuid) != nil
+        lock.unlock()
+        if expected { return }
+
+        let name = desc[kDADiskDescriptionVolumeNameKey as String] as? String
+            ?? desc[kDADiskDescriptionMediaNameKey as String] as? String
+            ?? "Volume"
+        let bsdName = desc[kDADiskDescriptionMediaBSDNameKey as String] as? String
+
+        Task.detached { [weak self] in
+            guard let self else { return }
+            let ok = await self.tryRemount(bsdName: bsdName)
+            self.broadcast(IPCMessage.encode(
+                IPCMessage.remountResult,
+                RemountResult(ok: ok, volumeName: name)
+            ))
+        }
+    }
+
+    /// 尝试重新挂载：磁盘刚消失时系统可能仍在处理，间隔做两次尝试。
+    private func tryRemount(bsdName: String?) async -> Bool {
+        guard let bsdName else { return false }
+        for delay in [0.6, 2.0] {
+            try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+            if runDiskUtil(["mount", "/dev/\(bsdName)"]).ok { return true }
+        }
+        return false
+    }
+
+    /// 执行 diskutil 子命令，返回退出状态与合并输出。
+    private func runDiskUtil(_ arguments: [String]) -> (ok: Bool, output: String) {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/sbin/diskutil")
+        process.arguments = arguments
+        let pipe = Pipe()
+        process.standardOutput = pipe
+        process.standardError = pipe
+        guard (try? process.run()) != nil else {
+            return (false, "无法启动 diskutil")
+        }
+        process.waitUntilExit()
+        let data = pipe.fileHandleForReading.readDataToEndOfFile()
+        let output = String(data: data, encoding: .utf8) ?? ""
+        return (process.terminationStatus == 0, output)
     }
 
     // MARK: - IPC 连接处理
@@ -190,6 +268,8 @@ public final class NopejectDaemon {
         }
         lock.lock()
         temporarilyAllowed.insert(uuid)
+        // 主动推出：记入豁免，磁盘消失时不会触发意外恢复。
+        expectedEjects.insert(uuid)
         lock.unlock()
 
         // 找到对应挂载点并调用 diskutil eject；审批回调将因一次性豁免而放行。
@@ -198,20 +278,7 @@ public final class NopejectDaemon {
         var ok = false
         var output = ""
         if let target = mount?.path ?? mount?.bsdName.map({ "/dev/\($0)" }) {
-            let process = Process()
-            process.executableURL = URL(fileURLWithPath: "/usr/sbin/diskutil")
-            process.arguments = ["eject", target]
-            let pipe = Pipe()
-            process.standardOutput = pipe
-            process.standardError = pipe
-            if (try? process.run()) != nil {
-                process.waitUntilExit()
-                let data = pipe.fileHandleForReading.readDataToEndOfFile()
-                output = String(data: data, encoding: .utf8) ?? ""
-                ok = process.terminationStatus == 0
-            } else {
-                output = "无法启动 diskutil"
-            }
+            (ok, output) = runDiskUtil(["eject", target])
         } else {
             output = "未找到挂载点"
         }
@@ -220,6 +287,7 @@ public final class NopejectDaemon {
             // 弹出失败则回收豁免，避免留下意外放行窗口。
             lock.lock()
             temporarilyAllowed.remove(uuid)
+            expectedEjects.remove(uuid)
             lock.unlock()
         }
         conn.send(IPCMessage.encode(IPCMessage.ejectResult, EjectResult(ok: ok, message: output)))

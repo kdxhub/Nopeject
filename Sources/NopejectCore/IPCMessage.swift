@@ -27,6 +27,7 @@ public struct IPCMessage: Codable, Equatable {
     public static let blocked = "blocked"
     public static let ejectOnce = "ejectOnce"
     public static let ejectResult = "ejectResult"
+    public static let remountResult = "remountResult"
     public static let shutdown = "shutdown"
     public static let ping = "ping"
     public static let pong = "pong"
@@ -79,5 +80,16 @@ public struct EjectResult: Codable, Equatable {
     public init(ok: Bool, message: String) {
         self.ok = ok
         self.message = message
+    }
+}
+
+/// 意外推出后重新挂载的结果载荷（daemon → 前端）。
+public struct RemountResult: Codable, Equatable {
+    public var ok: Bool
+    public var volumeName: String
+
+    public init(ok: Bool, volumeName: String) {
+        self.ok = ok
+        self.volumeName = volumeName
     }
 }

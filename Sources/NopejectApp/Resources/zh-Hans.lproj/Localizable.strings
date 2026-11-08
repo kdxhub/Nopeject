@@ -18,7 +18,7 @@
 "ctx.revealInFinder" = "在“访达”中显示";
 
 "menu.restartService" = "强制重启服务";
-"menu.security" = "权限与安全性";
+"menu.security" = "偏好设置";
 "menu.about" = "关于";
 "menu.quitAll" = "完全退出";
 "menu.sponsor" = "赞助";
@@ -26,21 +26,39 @@
 "menu.sponsor.blog" = "作者个人博客";
 "menu.quitFrontend" = "退出前端";
 
-"perm.mode.none" = "无";
-"perm.desc.none" = "不启用权限保护，任何人都可直接编辑保护列表。";
-"perm.mode.edit" = "编辑需要权限";
-"perm.desc.edit" = "进入编辑前需要验证一次管理员密码，保存后验证状态重置。";
-"perm.mode.always" = "始终需要权限";
-"perm.desc.always" = "每次编辑操作、查看编辑内容均需验证管理员密码。";
-"perm.hint" = "可能需要验证管理员身份。";
+/* 偏好设置：安全 / 推出恢复 */
+"pref.section.security" = "安全";
+"pref.section.recovery" = "推出恢复";
+
+"pref.auth.openUI.title" = "打开界面需要密码";
+"pref.auth.openUI.desc" = "打开 Nopeject 面板时需要验证管理员密码。";
+"pref.auth.edit.title" = "编辑保护状态需要密码";
+"pref.auth.edit.desc" = "切换挂载点的保护开关前需要验证管理员密码。";
+"pref.auth.eject.title" = "临时推出需要密码";
+"pref.auth.eject.desc" = "通过右键菜单或通知进行临时推出前需要验证管理员密码。";
+
+"pref.remount.title" = "意外推出后尝试重新挂载";
+"pref.remount.desc" = "受保护挂载点被意外推出后自动尝试重新挂载，并通知恢复结果。";
+
+/* 界面锁定页 */
+"lock.title" = "“Nopeject"”已锁定;
+"lock.text" = "需要使用用户密码解锁。";
+"lock.verify" = "输入密码";
 
 /* 认证原因：系统界面会拼接为「“Nopeject”想要 + 此文本」，故只写动词短语 */
 "auth.reason.toggleProtection" = "修改“%@”的保护状态";
-"auth.reason.changeMode" = "更改权限与安全性设置";
+"auth.reason.changeSettings" = "更改安全设置";
+"auth.reason.openUI" = "打开控制面板";
+"auth.reason.temporaryEject" = "临时推出“%@”";
 "auth.reason.generic" = "执行需要管理员授权的操作";
 
 "notify.blocked.title" = "已阻止推出";
 "notify.blocked.body" = "“%@”受 Nopeject 保护而无法推出。点击此处以临时推出。";
+
+"notify.remount.ok.title" = "挂载已恢复";
+"notify.remount.ok.body" = "“%@”已重新挂载。";
+"notify.remount.fail.title" = "无法恢复挂载";
+"notify.remount.fail.body" = "“%@”无法重新挂载，可能已与此 Mac 断开连接。";
 
 "notify.locate.title" = "已定位挂载点";
 "notify.locate.body" = "所选项目位于「%@」。打开菜单栏可看到对应条目高亮。";

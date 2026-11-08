@@ -30,30 +30,84 @@ public struct MountPoint: Codable, Equatable, Hashable, Identifiable {
     }
 }
 
-/// 权限模式：
-/// - none            「无」：不启用权限保护
-/// - requireForEdit  「编辑需要权限」：进入编辑（切换开关）前需要验证一次管理员密码，保存后重置
-/// - always          「始终需要权限」：每次编辑操作、查看编辑内容均需验证
-public enum PermissionMode: String, Codable, CaseIterable {
-    case none
-    case requireForEdit
-    case always
-}
-
 /// 守护进程持久化的配置（保护列表以 UUID 记录，重启后依然生效）。
+/// 权限控制从旧版单一 permissionMode 细分为按操作独立的开关。
 public struct NopejectConfig: Codable, Equatable {
     public var protectedUUIDs: [String]
     public var protectedNames: [String: String]
-    public var permissionMode: PermissionMode
+    /// 打开前端界面需要密码验证。
+    public var requireAuthOpenUI: Bool
+    /// 编辑保护状态（切换开关）需要密码验证。
+    public var requireAuthEdit: Bool
+    /// 使用临时推出功能需要密码验证。
+    public var requireAuthTemporaryEject: Bool
+    /// 受保护磁盘被意外推出后尝试重新挂载并通知结果。
+    public var remountAfterUnexpectedEject: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case protectedUUIDs, protectedNames
+        case requireAuthOpenUI, requireAuthEdit, requireAuthTemporaryEject
+        case remountAfterUnexpectedEject
+        /// 旧版配置的权限模式键（仅用于迁移）。
+        case permissionMode
+    }
 
     public init(
         protectedUUIDs: [String] = [],
         protectedNames: [String: String] = [:],
-        permissionMode: PermissionMode = .none
+        requireAuthOpenUI: Bool = false,
+        requireAuthEdit: Bool = false,
+        requireAuthTemporaryEject: Bool = false,
+        remountAfterUnexpectedEject: Bool = false
     ) {
         self.protectedUUIDs = protectedUUIDs
         self.protectedNames = protectedNames
-        self.permissionMode = permissionMode
+        self.requireAuthOpenUI = requireAuthOpenUI
+        self.requireAuthEdit = requireAuthEdit
+        self.requireAuthTemporaryEject = requireAuthTemporaryEject
+        self.remountAfterUnexpectedEject = remountAfterUnexpectedEject
+    }
+
+    /// 兼容旧版配置：无新开关字段时按 permissionMode 映射
+    /// （none → 全关；requireForEdit → 编辑开；always → 全开）。
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        protectedUUIDs = try container.decodeIfPresent([String].self, forKey: .protectedUUIDs) ?? []
+        protectedNames = try container.decodeIfPresent([String: String].self, forKey: .protectedNames) ?? [:]
+
+        if let openUI = try container.decodeIfPresent(Bool.self, forKey: .requireAuthOpenUI) {
+            requireAuthOpenUI = openUI
+            requireAuthEdit = try container.decodeIfPresent(Bool.self, forKey: .requireAuthEdit) ?? false
+            requireAuthTemporaryEject = try container.decodeIfPresent(Bool.self, forKey: .requireAuthTemporaryEject) ?? false
+        } else {
+            switch try? container.decodeIfPresent(String.self, forKey: .permissionMode) {
+            case "always":
+                requireAuthOpenUI = true
+                requireAuthEdit = true
+                requireAuthTemporaryEject = true
+            case "requireForEdit":
+                requireAuthOpenUI = false
+                requireAuthEdit = true
+                requireAuthTemporaryEject = false
+            default:
+                requireAuthOpenUI = false
+                requireAuthEdit = false
+                requireAuthTemporaryEject = false
+            }
+        }
+
+        remountAfterUnexpectedEject = try container.decodeIfPresent(Bool.self, forKey: .remountAfterUnexpectedEject) ?? false
+    }
+
+    /// 只编码当前字段，旧版 permissionMode 键不再写出。
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(protectedUUIDs, forKey: .protectedUUIDs)
+        try container.encode(protectedNames, forKey: .protectedNames)
+        try container.encode(requireAuthOpenUI, forKey: .requireAuthOpenUI)
+        try container.encode(requireAuthEdit, forKey: .requireAuthEdit)
+        try container.encode(requireAuthTemporaryEject, forKey: .requireAuthTemporaryEject)
+        try container.encode(remountAfterUnexpectedEject, forKey: .remountAfterUnexpectedEject)
     }
 
     public var isProtectedSet: Set<String> { Set(protectedUUIDs) }
