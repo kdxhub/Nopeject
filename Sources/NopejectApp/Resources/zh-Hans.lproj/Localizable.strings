@@ -1,0 +1,47 @@
+/* Nopeject — 简体中文 */
+
+"status.running" = "后端运行中";
+"status.stopped" = "后端已断开";
+
+"row.kind.internal" = "内置磁盘";
+"row.kind.external" = "外置磁盘";
+"row.kind.network" = "网络宗卷";
+
+"list.empty" = "没有可显示的挂载点";
+"list.disconnected" = "正在连接后端…";
+
+"menu.save" = "保存";
+"menu.saving" = "正在保存…";
+"menu.saved" = "已保存";
+
+"ctx.temporaryEject" = "临时弹出";
+"ctx.revealInFinder" = "在“访达”中显示";
+
+"menu.restartService" = "强制重启服务";
+"menu.security" = "权限与安全性";
+"menu.about" = "关于";
+"menu.quitAll" = "完全退出";
+"menu.sponsor" = "赞助";
+"menu.quitFrontend" = "退出前端";
+
+"perm.mode.none" = "无";
+"perm.desc.none" = "不启用权限保护，任何人都可直接编辑保护列表。";
+"perm.mode.edit" = "编辑需要权限";
+"perm.desc.edit" = "进入编辑前需要验证一次管理员密码，保存后验证状态重置。";
+"perm.mode.always" = "始终需要权限";
+"perm.desc.always" = "每次编辑操作、查看编辑内容均需验证管理员密码。";
+"perm.hint" = "切换模式本身始终需要验证管理员密码。";
+
+"auth.prompt" = "Nopeject 需要管理员授权";
+
+"notify.blocked.title" = "已阻止推出";
+"notify.blocked.body" = "「%@」受 Nopeject 保护。如需弹出，请在菜单中使用「临时弹出」。";
+
+"notify.locate.title" = "已定位挂载点";
+"notify.locate.body" = "所选项目位于「%@」。打开菜单栏可看到对应条目高亮。";
+"notify.locate.notFound" = "无法确定所选项目所在的挂载点。";
+
+"about.version" = "版本 %@";
+"about.tagline" = "保护你的挂载点，防止意外推出。";
+"about.authors" = "作者：Neonai & kdxiaoyi";
+"about.license" = "基于 MIT 许可证发布。";

@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  build:
+    name: Build & Package (${{ matrix.runner }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # macos-15（Xcode 16，编译时自动降级为高斯模糊）
+        # macos-26（Xcode 26，编译并启用液态玻璃路径）
+        runner: [macos-15, macos-26]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode (latest stable)
+        run: |
+          ls /Applications | grep Xcode || true
+          sudo xcode-select -s /Applications/Xcode*.app/Contents/Developer 2>/dev/null || true
+
+      - name: Build (debug)
+        run: swift build
+
+      - name: Build (release)
+        run: swift build -c release
+
+      - name: Package .app bundle
+        run: bash scripts/make-app.sh
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Nopeject-${{ matrix.runner }}
+          path: dist/Nopeject.app
+          if-no-files-found: error

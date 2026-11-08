@@ -1,0 +1,47 @@
+/* Nopeject — English */
+
+"status.running" = "Backend running";
+"status.stopped" = "Backend stopped";
+
+"row.kind.internal" = "Internal disk";
+"row.kind.external" = "External disk";
+"row.kind.network" = "Network volume";
+
+"list.empty" = "No mountable volumes";
+"list.disconnected" = "Connecting to backend…";
+
+"menu.save" = "Save";
+"menu.saving" = "Saving…";
+"menu.saved" = "Saved";
+
+"ctx.temporaryEject" = "Eject Temporarily";
+"ctx.revealInFinder" = "Show in Finder";
+
+"menu.restartService" = "Force Restart Service";
+"menu.security" = "Privacy & Security";
+"menu.about" = "About";
+"menu.quitAll" = "Quit Completely";
+"menu.sponsor" = "Sponsor";
+"menu.quitFrontend" = "Quit Frontend Only";
+
+"perm.mode.none" = "None";
+"perm.desc.none" = "No permission protection. Anyone can edit the protection list.";
+"perm.mode.edit" = "Require Permission to Edit";
+"perm.desc.edit" = "Verifying the administrator password is required once before editing; the verification resets after saving.";
+"perm.mode.always" = "Always Require Permission";
+"perm.desc.always" = "Every edit operation — and viewing the editor — requires verifying the administrator password.";
+"perm.hint" = "Switching between modes always requires the administrator password.";
+
+"auth.prompt" = "Nopeject needs administrator authorization";
+
+"notify.blocked.title" = "Eject Blocked";
+"notify.blocked.body" = "“%@” is protected by Nopeject. To eject it, use “Eject Temporarily” from the menu.";
+
+"notify.locate.title" = "Mount Point Located";
+"notify.locate.body" = "The selected item belongs to “%@”. Open the menu bar to see it highlighted.";
+"notify.locate.notFound" = "Could not determine the mount point of the selected item.";
+
+"about.version" = "Version %@";
+"about.tagline" = "Protect your volumes from accidental ejection.";
+"about.authors" = "by Neonai & kdxiaoyi";
+"about.license" = "Released under the MIT License.";

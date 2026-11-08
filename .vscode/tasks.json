@@ -1,0 +1,38 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Nopeject: 构建（Debug）",
+            "type": "shell",
+            "command": "swift build",
+            "group": { "kind": "build", "isDefault": true },
+            "problemMatcher": "$swiftc"
+        },
+        {
+            "label": "Nopeject: 构建（Release）",
+            "type": "shell",
+            "command": "swift build -c release",
+            "group": "build",
+            "problemMatcher": "$swiftc"
+        },
+        {
+            "label": "Nopeject: 打包 .app 产物",
+            "type": "shell",
+            "command": "bash scripts/make-app.sh",
+            "group": "build",
+            "problemMatcher": "$swiftc"
+        },
+        {
+            "label": "Nopeject: 启动后端守护进程（Debug）",
+            "type": "shell",
+            "command": "swift run nopejectd",
+            "problemMatcher": []
+        },
+        {
+            "label": "Nopeject: 启动前端（Debug）",
+            "type": "shell",
+            "command": "swift run NopejectApp",
+            "problemMatcher": []
+        }
+    ]
+}
