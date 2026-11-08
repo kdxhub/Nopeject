@@ -31,7 +31,7 @@ final class AppState: ObservableObject {
     @Published var statusMessage: String?
 
     /// 赞助链接。
-    static let sponsorURL = URL(string: "http://kdx233.github.io/s/donate/")!
+    static let sponsorURL = URL(string: "http://kdx233.github.io/s/donate")!
 
     /// 项目主页。
     static let githubURL = URL(string: "https://github.com/kdxhub/Nopeject")!
