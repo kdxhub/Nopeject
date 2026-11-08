@@ -33,7 +33,10 @@
 "perm.desc.always" = "Every edit operation — and viewing the editor — requires verifying the administrator password.";
 "perm.hint" = "Switching between modes may require the administrator authorization.";
 
-"auth.prompt" = "Nopeject wants to make changes";
+/* Authentication reason: the system dialog reads ““Nopeject” wants to” + this text, so keep verb phrases only */
+"auth.reason.toggleProtection" = "change the protection status of “%@”";
+"auth.reason.changeMode" = "change the privacy & security settings";
+"auth.reason.generic" = "perform an action that requires administrator authorization";
 
 "notify.blocked.title" = "Eject Blocked";
 "notify.blocked.body" = "“%@” is protected by Nopeject. To eject it, use “Eject Temporarily” from the app menu.";

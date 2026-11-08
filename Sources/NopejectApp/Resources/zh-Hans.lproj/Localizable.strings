@@ -33,7 +33,10 @@
 "perm.desc.always" = "每次编辑操作、查看编辑内容均需验证管理员密码。";
 "perm.hint" = "可能需要验证管理员身份。";
 
-"auth.prompt" = "Nopeject 想要执行变更";
+/* 认证原因：系统界面会拼接为「“Nopeject”想要 + 此文本」，故只写动词短语 */
+"auth.reason.toggleProtection" = "修改“%@”的保护状态";
+"auth.reason.changeMode" = "更改权限与安全性设置";
+"auth.reason.generic" = "执行需要管理员授权的操作";
 
 "notify.blocked.title" = "已阻止推出";
 "notify.blocked.body" = "“%@”受 Nopeject 保护而无法推出。如需推出，请在 App 菜单中使用“临时推出”。";

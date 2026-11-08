@@ -6,6 +6,7 @@ import LocalAuthentication
 /// 「编辑需要权限」「始终需要权限」两种模式的切换与生效均依赖它。
 enum AdminAuth {
     /// 发起系统身份验证，返回用户是否通过验证。
+    /// reason 会被系统拼在「“Nopeject”想要」之后，因此必须传入动词短语而非完整句子。
     static func requireAdmin(reason: String? = nil) async -> Bool {
         let context = LAContext()
         var error: NSError?
@@ -20,7 +21,7 @@ enum AdminAuth {
         return await withCheckedContinuation { continuation in
             context.evaluatePolicy(
                 .deviceOwnerAuthentication,
-                localizedReason: reason ?? L10n.t("auth.prompt")
+                localizedReason: reason ?? L10n.t("auth.reason.generic")
             ) { success, _ in
                 continuation.resume(returning: success)
             }

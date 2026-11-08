@@ -181,11 +181,11 @@ final class AppState: ObservableObject {
             break
         case .requireForEdit:
             if !editAuthorized {
-                guard await authenticate() else { return }
+                guard await authenticate(reason: String(format: L10n.t("auth.reason.toggleProtection"), mount.name)) else { return }
                 editAuthorized = true
             }
         case .always:
-            guard await authenticate() else { return }
+            guard await authenticate(reason: String(format: L10n.t("auth.reason.toggleProtection"), mount.name)) else { return }
         }
         withAnimation(.easeInOut(duration: 0.2)) {
             if newValue {
@@ -214,7 +214,7 @@ final class AppState: ObservableObject {
     /// 更改权限模式（切换需验证身份，随后立即持久化）。
     func changePermissionMode(to newMode: PermissionMode) async {
         guard newMode != permissionMode else { return }
-        guard await authenticate() else { return }
+        guard await authenticate(reason: L10n.t("auth.reason.changeMode")) else { return }
         var config = savedConfig
         config.permissionMode = newMode
         config.protectedUUIDs = Array(pendingProtected).sorted()
@@ -226,11 +226,12 @@ final class AppState: ObservableObject {
     }
 
     /// 发起系统身份验证；验证期间挂起状态互斥，不允许并发重复弹出认证界面。
-    private func authenticate() async -> Bool {
+    /// reason 会拼在系统认证框的「“Nopeject”想要」之后，让用户知道这次验证要做什么。
+    private func authenticate(reason: String? = nil) async -> Bool {
         guard !isAuthenticating else { return false }
         isAuthenticating = true
         defer { isAuthenticating = false }
-        return await AdminAuth.requireAdmin()
+        return await AdminAuth.requireAdmin(reason: reason)
     }
 
     // MARK: - 右键菜单与底部菜单动作
