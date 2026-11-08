@@ -144,7 +144,7 @@ final class AppState: ObservableObject {
 
         case IPCMessage.blocked:
             if let event = message.decode(as: BlockedEvent.self) {
-                Notifier.notifyBlocked(volumeName: event.volumeName)
+                Notifier.notifyBlocked(event: event)
             }
 
         case IPCMessage.ejectResult:
@@ -236,9 +236,33 @@ final class AppState: ObservableObject {
 
     // MARK: - 右键菜单与底部菜单动作
 
-    /// 临时弹出：通知守护进程一次性放行并执行推出。
+    /// 临时推出：通知守护进程一次性放行并执行推出。
     func temporaryEject(_ mount: MountPoint) {
-        client.send(IPCMessage(action: IPCMessage.ejectOnce, data: mount.id))
+        temporaryEject(id: mount.id)
+    }
+
+    /// 按挂载点 ID（uuid 或路径）临时推出，供通知点击等没有完整 MountPoint 的场景使用。
+    func temporaryEject(id: String) {
+        guard !id.isEmpty else { return }
+        client.send(IPCMessage(action: IPCMessage.ejectOnce, data: id))
+    }
+
+    /// 点击拦截通知后的确认弹窗：询问用户是否临时推出被拦截的磁盘。
+    func confirmTemporaryEject(for event: BlockedEvent) {
+        NSApp.activate(ignoringOtherApps: true)
+        let alert = NSAlert()
+        alert.messageText = L10n.tf("alert.eject.title", event.volumeName)
+        alert.informativeText = L10n.t("alert.eject.text")
+        alert.alertStyle = .warning
+        alert.addButton(withTitle: L10n.t("ctx.temporaryEject"))
+        alert.addButton(withTitle: L10n.t("alert.quit.cancel"))
+        if let icon = NSImage(systemSymbolName: "eject.fill", accessibilityDescription: nil) {
+            alert.icon = icon
+        }
+        let response = alert.runModal()
+        if response == .alertFirstButtonReturn {
+            temporaryEject(id: event.uuid ?? event.path ?? "")
+        }
     }
 
     func revealInFinder(_ mount: MountPoint) {

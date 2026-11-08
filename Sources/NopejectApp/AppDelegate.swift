@@ -63,6 +63,31 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         completionHandler([.banner, .sound])
     }
 
+    // MARK: - 通知点击
+
+    /// 点击已阻止推出的通知 → 弹窗询问是否临时推出对应磁盘。
+    func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        didReceive response: UNNotificationResponse,
+        withCompletionHandler completionHandler: @escaping () -> Void
+    ) {
+        let request = response.notification.request
+        guard request.identifier.hasPrefix(Notifier.blockedIdentifierPrefix) else {
+            completionHandler()
+            return
+        }
+        let info = request.content.userInfo
+        let event = BlockedEvent(
+            volumeName: info["volumeName"] as? String ?? "",
+            uuid: info["uuid"] as? String,
+            path: info["path"] as? String
+        )
+        Task { @MainActor in
+            AppState.shared.confirmTemporaryEject(for: event)
+        }
+        completionHandler()
+    }
+
     // MARK: - 访达服务入口
 
     /// NSServices 处理器：接收访达选中的文件/目录，判断其所在挂载点并高亮提示。

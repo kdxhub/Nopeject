@@ -193,7 +193,8 @@ public final class NopejectDaemon {
         lock.unlock()
 
         // 找到对应挂载点并调用 diskutil eject；审批回调将因一次性豁免而放行。
-        let mount = MountEnumerator.enumerate().first { $0.uuid == uuid }
+        // 负载可能是宗卷 UUID 或挂载路径（无 UUID 的宗卷回退为路径）。
+        let mount = MountEnumerator.enumerate().first { $0.id == uuid || $0.path == uuid }
         var ok = false
         var output = ""
         if let target = mount?.path ?? mount?.bsdName.map({ "/dev/\($0)" }) {

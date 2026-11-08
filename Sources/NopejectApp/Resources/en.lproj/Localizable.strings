@@ -6,6 +6,8 @@
 "row.kind.internal" = "Internal disk";
 "row.kind.external" = "External disk";
 "row.kind.network" = "Network volume";
+"row.kind.virtual" = "Disk image";
+"row.kind.network" = "Network volume";
 "row.subtitle" = "%1$@ · %2$@ / %3$@ free";
 
 "list.empty" = "No mountable volumes";
@@ -39,7 +41,7 @@
 "auth.reason.generic" = "perform an action that requires administrator authorization";
 
 "notify.blocked.title" = "Eject Blocked";
-"notify.blocked.body" = "“%@” is protected by Nopeject. To eject it, use “Eject Temporarily” from the app menu.";
+"notify.blocked.body" = "“%@” is protected by Nopeject. Click this to eject it once.";
 
 "notify.locate.title" = "Mount Point Located";
 "notify.locate.body" = "The selected item belongs to “%@”. Open the menu bar to see it highlighted.";
@@ -49,6 +51,9 @@
 "alert.quit.text" = "Quitting also stops the backend protection service. Protected disks will no longer be blocked from ejection.";
 "alert.quit.confirm" = "Quit Completely";
 "alert.quit.cancel" = "Cancel";
+
+"alert.eject.title" = "Temporarily eject “%@”?";
+"alert.eject.text" = "This disk is protected by Nopeject. A temporary eject will run one eject operation instantly.";
 
 "onboarding.title" = "Nopeject is running in your menu bar";
 "onboarding.text" = "Nopeject will run disk ejection protection in the background. To manage it, use the icon in the menu bar at the top of the screen.\nNopeject needs the “Notifications,” “Open at Login,” and “App Background Activity” permissions to run.\nThis window will only be shown once.";

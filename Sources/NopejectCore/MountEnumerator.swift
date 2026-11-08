@@ -27,23 +27,6 @@ public enum MountEnumerator {
             let fs = statfsStruct(forPath: path)
             let isNetwork = ((fs?.f_flags ?? 0) & UInt32(truncatingIfNeeded: MNT_LOCAL)) == 0
 
-            let kindRaw: String
-            if isNetwork {
-                kindRaw = "network"
-            } else if values.volumeIsInternal ?? false {
-                kindRaw = "internal"
-            } else {
-                kindRaw = "external"
-            }
-
-            let ejectable = (values.volumeIsEjectable ?? false)
-                || (values.volumeIsRemovable ?? false)
-                || kindRaw == "external"
-
-            // 内置且不可弹出的宗卷（如 Macintosh HD 系统盘、内置数据卷）本就无法推出，
-            // 不纳入可保护列表。
-            guard kindRaw != "internal" || ejectable else { return nil }
-
             let bsdName = fs.map { fsValue -> String in
                 let raw = withUnsafeBytes(of: fsValue.f_mntfromname) { buffer -> String in
                     let bytes = buffer.prefix { $0 != 0 }
@@ -55,7 +38,29 @@ public enum MountEnumerator {
                 // /dev/disk4s1 -> disk4s1
                 bsd.hasPrefix("/dev/") ? String(bsd.dropFirst(5)) : bsd
             }
-            let uuid = volumeUUID(bsdName: bsdName)
+            let info = volumeInfo(bsdName: bsdName)
+
+            let kindRaw: String
+            if isNetwork {
+                kindRaw = "network"
+            } else if info.deviceProtocol == "Virtual Interface" {
+                // dmg / ramdisk 等磁盘映像：DA 协议为 Virtual Interface，
+                // 资源管理器却把 volumeIsInternal 报成 false，需在物理盘判断前甄别。
+                kindRaw = "virtual"
+            } else if values.volumeIsInternal ?? false {
+                kindRaw = "internal"
+            } else {
+                kindRaw = "external"
+            }
+
+            let ejectable = (values.volumeIsEjectable ?? false)
+                || (values.volumeIsRemovable ?? false)
+                || kindRaw == "external"
+                || kindRaw == "virtual"
+
+            // 内置且不可弹出的宗卷（如 Macintosh HD 系统盘、内置数据卷）本就无法推出，
+            // 不纳入可保护列表。
+            guard kindRaw != "internal" || ejectable else { return nil }
 
             // 可用空间以 statfs 为准：volumeAvailableCapacityForImportantUsageKey
             // 在 Time Machine 目标宗卷等场景会返回 0，statfs 的 f_bavail 与 df 一致。
@@ -66,7 +71,7 @@ public enum MountEnumerator {
                 ?? Int64(values.volumeTotalCapacity ?? 0)
 
             return MountPoint(
-                uuid: uuid,
+                uuid: info.uuid,
                 name: values.volumeName ?? url.lastPathComponent,
                 path: path,
                 kindRaw: kindRaw,
@@ -103,16 +108,20 @@ public enum MountEnumerator {
         return result == 0 ? fs : nil
     }
 
-    /// 通过 DiskArbitration 由 BSD 设备名取得宗卷 UUID。
-    private static func volumeUUID(bsdName: String?) -> String? {
-        guard let bsdName else { return nil }
-        guard let session = DASessionCreate(kCFAllocatorDefault) else { return nil }
+    /// 通过 DiskArbitration 由 BSD 设备名取得宗卷 UUID 与设备协议。
+    /// 协议用于甄别虚拟磁盘（磁盘映像为 "Virtual Interface"，物理盘为 "USB" 等）。
+    private static func volumeInfo(bsdName: String?) -> (uuid: String?, deviceProtocol: String?) {
+        guard let bsdName else { return (nil, nil) }
+        guard let session = DASessionCreate(kCFAllocatorDefault) else { return (nil, nil) }
         defer { _ = session } // ARC
         guard let disk = DADiskCreateFromBSDName(kCFAllocatorDefault, session, "/dev/\(bsdName)"),
-              let desc = DADiskCopyDescription(disk) as? [String: Any],
-              let cfuuid = desc[kDADiskDescriptionVolumeUUIDKey as String].map({ unsafeDowncast($0 as AnyObject, to: CFUUID.self) }) else {
-            return nil
+              let desc = DADiskCopyDescription(disk) as? [String: Any] else {
+            return (nil, nil)
         }
-        return CFUUIDCreateString(kCFAllocatorDefault, cfuuid) as String?
+        let uuid = desc[kDADiskDescriptionVolumeUUIDKey as String]
+            .map { unsafeDowncast($0 as AnyObject, to: CFUUID.self) }
+            .map { CFUUIDCreateString(kCFAllocatorDefault, $0) as String }
+        let protocol_ = desc[kDADiskDescriptionDeviceProtocolKey as String] as? String
+        return (uuid, protocol_)
     }
 }

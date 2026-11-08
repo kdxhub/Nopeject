@@ -6,6 +6,7 @@
 "row.kind.internal" = "内置磁盘";
 "row.kind.external" = "外置磁盘";
 "row.kind.network" = "网络宗卷";
+"row.kind.virtual" = "磁盘映像";
 "row.subtitle" = "%1$@ · %2$@ / %3$@ 可用";
 
 "list.empty" = "没有可显示的挂载点";
@@ -39,16 +40,19 @@
 "auth.reason.generic" = "执行需要管理员授权的操作";
 
 "notify.blocked.title" = "已阻止推出";
-"notify.blocked.body" = "“%@”受 Nopeject 保护而无法推出。如需推出，请在 App 菜单中使用“临时推出”。";
+"notify.blocked.body" = "“%@”受 Nopeject 保护而无法推出。点击此处以临时推出。";
 
 "notify.locate.title" = "已定位挂载点";
 "notify.locate.body" = "所选项目位于「%@」。打开菜单栏可看到对应条目高亮。";
 "notify.locate.notFound" = "无法确定所选项目所在的挂载点。";
 
 "alert.quit.title" = "确定要完全退出 Nopeject 吗？";
-"alert.quit.text" = "退出将同时停止后台保护服务，受保护的磁盘将不再被拦截推出。";
+"alert.quit.text" = "退出将同时停止后台保护服务，受保护的挂载点将不再被拦截推出。";
 "alert.quit.confirm" = "完全退出";
 "alert.quit.cancel" = "取消";
+
+"alert.eject.title" = "要临时推出“%@”吗？";
+"alert.eject.text" = "该挂载点受 Nopeject 保护，临时推出将立即推出挂载点。";
 
 "onboarding.title" = "Nopeject 已在运行";
 "onboarding.text" = "Nopeject 将在后台运行推出保护，如需管理请使用顶部菜单栏的图标。\nNopeject 需要“通知”、“登录时打开”与“App 后台活动”权限才能运行。\n此窗口只显示这一次。";
