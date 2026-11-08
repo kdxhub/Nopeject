@@ -3,21 +3,48 @@ import AppKit
 import NopejectCore
 
 /// 菜单主内容：顶部项目名 + 后端状态点、挂载点列表、底部状态与“…”二级菜单。
+/// 面板高度由当前页面的自然高度驱动（fixedSize 测量，避免约束回环），
+/// 高度变化（列表增减、页面切换）统一走弹簧动画，窗口随之平滑伸缩。
 struct MenuContentView: View {
     @ObservedObject private var state = AppState.shared
     @State private var listContentHeight: CGFloat = 0
+    /// 当前页面自然高度（nil = 尚未完成首次布局，不参与动画）。
+    @State private var panelHeight: CGFloat?
+    /// 各挂载点行在窗口坐标（SwiftUI global，原点左上）中的 frame。
+    @State private var rowFrames: [String: CGRect] = [:]
+    @State private var rightClickMonitor: Any?
 
     var body: some View {
         Group {
             switch state.screen {
-            case .main: mainScreen
-            case .security: SecurityScreen()
-            case .about: AboutScreen()
+            case .main: mainScreen.transition(.opacity)
+            case .security: SecurityScreen().transition(.opacity)
+            case .about: AboutScreen().transition(.opacity)
             }
         }
+        // fixedSize 让内部始终以自然高度布局：外层 frame 动画不会反过来
+        // 压缩内容，测量值永远真实，高度动画不会出现回环。
+        .fixedSize(horizontal: false, vertical: true)
+        .onGeometryChange(for: CGFloat.self, of: { proxy in
+            proxy.size.height
+        }, action: { newValue in
+            if panelHeight == nil {
+                // 首次布局直接落位，避免打开菜单时内容从零飘入。
+                panelHeight = newValue
+            } else {
+                withAnimation(.spring(duration: 0.35)) {
+                    panelHeight = newValue
+                }
+            }
+        })
+        .frame(height: panelHeight)
+        .clipped()
         .frame(width: 380)
         .animation(.spring(duration: 0.35), value: state.screen)
-        .onAppear { state.refresh() }
+        .onAppear {
+            state.refresh()
+            installRightClickMonitor()
+        }
         .nopejectPanelBackground()
     }
 
@@ -34,6 +61,15 @@ struct MenuContentView: View {
         VStack(spacing: 0) {
             ForEach(state.mountPoints) { mount in
                 MountPointRow(mount: mount)
+                    .background(
+                        // 记录每行在窗口坐标中的位置，供右键事件命中判定使用。
+                        Color.clear
+                            .onGeometryChange(for: CGRect.self, of: { proxy in
+                                proxy.frame(in: .global)
+                            }, action: { newFrame in
+                                rowFrames[mount.id] = newFrame
+                            })
+                    )
                 if mount.id != state.mountPoints.last?.id {
                     Divider().padding(.leading, 44)
                 }
@@ -43,9 +79,14 @@ struct MenuContentView: View {
         .onGeometryChange(for: CGFloat.self, of: { proxy in
             proxy.size.height
         }, action: { newValue in
-            // 内容高度变化（挂载点增减、窗口拉高）统一走弹簧动画。
-            withAnimation(.spring(duration: 0.35)) {
+            if listContentHeight == 0 {
+                // 首次布局直接落位，避免打开菜单时内容从零飘入。
                 listContentHeight = newValue
+            } else {
+                // 内容高度变化（挂载点增减、窗口拉高）统一走弹簧动画。
+                withAnimation(.spring(duration: 0.35)) {
+                    listContentHeight = newValue
+                }
             }
         })
     }
@@ -178,6 +219,86 @@ struct MenuContentView: View {
         .menuStyle(.button)
         .menuIndicator(.hidden)
         .fixedSize()
+    }
+
+    // MARK: - 右键菜单（本地事件监听）
+
+    /// 在应用内监听 rightMouseDown，按行 frame 命中后弹出原生菜单并高亮该行。
+    /// （SwiftUI 的 contextMenu 无法提供开合回调；行背景层 NSView 又收不到事件。）
+    private func installRightClickMonitor() {
+        guard rightClickMonitor == nil else { return }
+        // addLocalMonitorForEvents 的回调固定在主线程执行。
+        rightClickMonitor = NSEvent.addLocalMonitorForEvents(matching: .rightMouseDown) { event in
+            handleRightClick(event)
+        }
+    }
+
+    /// 返回 nil 表示事件已消费（弹出了行右键菜单），否则原样放行。
+    private func handleRightClick(_ event: NSEvent) -> NSEvent? {
+        guard let window = event.window,
+              let mountID = hitRowID(at: event.locationInWindow, window: window),
+              let mount = state.mountPoints.first(where: { $0.id == mountID }) else {
+            return event
+        }
+
+        withAnimation(.easeInOut(duration: 0.12)) {
+            state.contextMenuUUID = mountID
+        }
+        defer {
+            withAnimation(.easeInOut(duration: 0.12)) {
+                state.contextMenuUUID = nil
+            }
+        }
+
+        let menu = NSMenu()
+        menu.autoenablesItems = false
+
+        let eject = NSMenuItem(
+            title: L10n.t("ctx.temporaryEject"),
+            action: #selector(RowMenuTarget.run(_:)),
+            keyEquivalent: ""
+        )
+        eject.image = NSImage(systemSymbolName: "eject.fill", accessibilityDescription: nil)
+        eject.isEnabled = mount.isEjectable
+        eject.representedObject = RowMenuAction { state.temporaryEject(mount) }
+
+        let reveal = NSMenuItem(
+            title: L10n.t("ctx.revealInFinder"),
+            action: #selector(RowMenuTarget.run(_:)),
+            keyEquivalent: ""
+        )
+        reveal.image = NSImage(systemSymbolName: "folder", accessibilityDescription: nil)
+        reveal.isEnabled = true
+        reveal.representedObject = RowMenuAction { state.revealInFinder(mount) }
+
+        menu.addItem(eject)
+        menu.addItem(reveal)
+
+        let target = RowMenuTarget()
+        for item in menu.items { item.target = target }
+
+        // popUp 同步阻塞至菜单关闭；at 使用窗口坐标（原点左下）。
+        menu.popUp(positioning: nil, at: event.locationInWindow, in: window.contentView)
+        return nil
+    }
+
+    /// 将窗口底部原坐标转换为 SwiftUI global（顶部原），返回命中的行 ID。
+    private func hitRowID(at locationInWindow: NSPoint, window: NSWindow) -> String? {
+        let contentHeight = window.contentView?.bounds.height ?? 0
+        let point = NSPoint(x: locationInWindow.x, y: contentHeight - locationInWindow.y)
+        return rowFrames.first(where: { $0.value.contains(point) })?.key
+    }
+}
+
+/// 右键菜单动作转发。
+private final class RowMenuAction {
+    let run: () -> Void
+    init(_ run: @escaping () -> Void) { self.run = run }
+}
+
+private final class RowMenuTarget: NSObject {
+    @objc func run(_ sender: NSMenuItem) {
+        (sender.representedObject as? RowMenuAction)?.run()
     }
 }
 

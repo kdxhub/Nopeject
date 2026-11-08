@@ -1,30 +1,28 @@
 import Foundation
+import LocalAuthentication
 
-/// 管理员密码验证：通过系统授权对话框（osascript with administrator privileges）。
+/// 管理员身份验证：使用 LocalAuthentication（触控 ID / 登录密码）。
+/// 系统认证界面异步弹出，验证期间应用 UI 保持响应；
 /// 「编辑需要权限」「始终需要权限」两种模式的切换与生效均依赖它。
 enum AdminAuth {
-    /// 弹出系统管理员授权对话框，返回用户是否通过验证。
+    /// 发起系统身份验证，返回用户是否通过验证。
     static func requireAdmin(reason: String? = nil) async -> Bool {
-        let prompt = reason ?? L10n.t("auth.prompt")
-        let escaped = prompt
-            .replacingOccurrences(of: "\\", with: "\\\\")
-            .replacingOccurrences(of: "\"", with: "\\\"")
-        let script = "do shell script \"true\" with administrator privileges with prompt \"\(escaped)\""
+        let context = LAContext()
+        var error: NSError?
+
+        guard context.canEvaluatePolicy(.deviceOwnerAuthentication, error: &error) else {
+            FileHandle.standardError.write(
+                Data("Nopeject: 无法评估身份验证策略: \(error?.localizedDescription ?? "unknown")\n".utf8)
+            )
+            return false
+        }
 
         return await withCheckedContinuation { continuation in
-            DispatchQueue.global(qos: .userInitiated).async {
-                let process = Process()
-                process.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
-                process.arguments = ["-e", script]
-                process.standardOutput = FileHandle.nullDevice
-                process.standardError = FileHandle.nullDevice
-                do {
-                    try process.run()
-                    process.waitUntilExit()
-                    continuation.resume(returning: process.terminationStatus == 0)
-                } catch {
-                    continuation.resume(returning: false)
-                }
+            context.evaluatePolicy(
+                .deviceOwnerAuthentication,
+                localizedReason: reason ?? L10n.t("auth.prompt")
+            ) { success, _ in
+                continuation.resume(returning: success)
             }
         }
     }

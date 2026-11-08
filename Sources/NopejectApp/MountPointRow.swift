@@ -68,14 +68,5 @@ struct MountPointRow: View {
             }
         }
         .contentShape(Rectangle())
-        .background {
-            RowContextMenu(
-                isEjectable: mount.isEjectable,
-                onOpen: { state.contextMenuUUID = mount.id },
-                onClose: { state.contextMenuUUID = nil },
-                onTemporaryEject: { state.temporaryEject(mount) },
-                onRevealInFinder: { state.revealInFinder(mount) }
-            )
-        }
     }
 }

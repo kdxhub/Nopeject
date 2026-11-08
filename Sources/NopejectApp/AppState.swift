@@ -38,6 +38,10 @@ final class AppState: ObservableObject {
 
     private var client = BackendClient()
     private var editAuthorized = false
+    /// 正在进行系统身份验证（期间禁止再次发起，避免重复弹出认证框）。
+    @Published var isAuthenticating = false
+    /// 等待守护进程确认的配置（configSaved 到达后整体回写）。
+    private var pendingConfig: NopejectConfig?
     private var pendingSaveContinuation: CheckedContinuation<Void, Never>?
     private var savedResetTask: Task<Void, Never>?
 
@@ -126,7 +130,13 @@ final class AppState: ObservableObject {
             }
 
         case IPCMessage.configSaved:
-            savedConfig.protectedUUIDs = Array(pendingProtected).sorted()
+            // 用发送时完整配置回写（含 permissionMode），保证模式切换立即生效。
+            if let pending = pendingConfig {
+                savedConfig = pending
+                pendingConfig = nil
+            } else {
+                savedConfig.protectedUUIDs = Array(pendingProtected).sorted()
+            }
             editAuthorized = false
             setSaveState(.saved)
             pendingSaveContinuation?.resume()
@@ -164,18 +174,18 @@ final class AppState: ObservableObject {
 
     // MARK: - 编辑操作
 
-    /// 切换某挂载点的保护状态（可能要求管理员验证）。
+    /// 切换某挂载点的保护状态（可能要求身份验证）。
     func toggle(_ mount: MountPoint, to newValue: Bool) async {
         switch permissionMode {
         case .none:
             break
         case .requireForEdit:
             if !editAuthorized {
-                guard await AdminAuth.requireAdmin() else { return }
+                guard await authenticate() else { return }
                 editAuthorized = true
             }
         case .always:
-            guard await AdminAuth.requireAdmin() else { return }
+            guard await authenticate() else { return }
         }
         withAnimation(.easeInOut(duration: 0.2)) {
             if newValue {
@@ -194,23 +204,33 @@ final class AppState: ObservableObject {
         setSaveState(.saving)
         var config = savedConfig
         config.protectedUUIDs = Array(pendingProtected).sorted()
+        pendingConfig = config
         await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
             pendingSaveContinuation = continuation
             client.send(IPCMessage.encode(IPCMessage.setConfig, config))
         }
     }
 
-    /// 更改权限模式（切换需验证管理员密码，随后立即持久化）。
+    /// 更改权限模式（切换需验证身份，随后立即持久化）。
     func changePermissionMode(to newMode: PermissionMode) async {
         guard newMode != permissionMode else { return }
-        guard await AdminAuth.requireAdmin() else { return }
+        guard await authenticate() else { return }
         var config = savedConfig
         config.permissionMode = newMode
         config.protectedUUIDs = Array(pendingProtected).sorted()
+        pendingConfig = config
         await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
             pendingSaveContinuation = continuation
             client.send(IPCMessage.encode(IPCMessage.setConfig, config))
         }
+    }
+
+    /// 发起系统身份验证；验证期间挂起状态互斥，不允许并发重复弹出认证界面。
+    private func authenticate() async -> Bool {
+        guard !isAuthenticating else { return false }
+        isAuthenticating = true
+        defer { isAuthenticating = false }
+        return await AdminAuth.requireAdmin()
     }
 
     // MARK: - 右键菜单与底部菜单动作
