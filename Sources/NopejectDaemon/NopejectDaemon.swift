@@ -71,6 +71,9 @@ public final class NopejectDaemon {
         }
         do {
             try server.start()
+        } catch let error as POSIXError where error.code == .EADDRINUSE {
+            FileHandle.standardError.write(Data("nopejectd: 已有实例在运行（IPC socket 被占用），退出\n".utf8))
+            exit(0)
         } catch {
             FileHandle.standardError.write(Data("nopejectd: 无法监听 IPC socket: \(error)\n".utf8))
             exit(1)

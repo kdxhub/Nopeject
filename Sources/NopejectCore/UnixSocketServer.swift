@@ -31,6 +31,16 @@ public final class UnixSocketServer {
             dest.baseAddress!.copyMemory(from: pathBytes, byteCount: pathBytes.count)
         }
 
+        // 先探测是否已有存活实例：socket 能连上说明已有守护进程在监听。
+        // 此时绝不能 unlink 抢占——否则第二个实例会顶掉旧实例的 socket 路径，
+        // 导致两个进程同时注册卸载审批回调、旧实例与前端失联。直接报错退出。
+        let probe = UnixSocketConnector.connect(path: path, timeout: 1)
+        if probe >= 0 {
+            close(probe)
+            throw POSIXError(.EADDRINUSE)
+        }
+        // 探测失败：socket 文件要么不存在，要么是残留的死文件（旧实例已退出），
+        // 此时 unlink 是安全的。
         unlink(path)
         let bindResult = withUnsafePointer(to: &addr) { ptr in
             ptr.withMemoryRebound(to: sockaddr.self, capacity: 1) {
@@ -72,6 +82,9 @@ public final class UnixSocketServer {
                 if errno == EINTR { continue }
                 return
             }
+            // 对端已关闭时写 socket 会触发 SIGPIPE 杀死进程；socket 层面禁掉。
+            var nosigpipe: Int32 = 1
+            setsockopt(clientFD, SOL_SOCKET, SO_NOSIGPIPE, &nosigpipe, socklen_t(MemoryLayout<Int32>.size))
             // 每条连接在独立队列上处理完整生命周期（含握手与消息循环），
             // 避免一个长连接阻塞后续连接（前端重连、多客户端等场景）。
             DispatchQueue.global(qos: .userInitiated).async { [handler] in

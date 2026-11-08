@@ -36,6 +36,8 @@
 "pref.auth.edit.desc" = "Verifying the administrator password is required before toggling a mount point's protection.";
 "pref.auth.eject.title" = "Require Password to Eject Temporarily";
 "pref.auth.eject.desc" = "Verifying the administrator password is required before ejecting temporarily via the context menu or notifications.";
+"pref.auth.quit.title" = "Require Password to Quit";
+"pref.auth.quit.desc" = "Verifying the administrator password is required before quitting Nopeject completely (which also stops the backend protection).";
 
 "pref.remount.title" = "Try Remounting After Unexpected Ejection";
 "pref.remount.desc" = "Automatically try to remount a protected volume ejected unexpectedly, and notify you of the result.";
@@ -50,6 +52,7 @@
 "auth.reason.changeSettings" = "change the security settings";
 "auth.reason.unlock" = "unlock the settings";
 "auth.reason.temporaryEject" = "temporarily eject “%@”";
+"auth.reason.quit" = "quit completely and stop its protection service";
 "auth.reason.generic" = "perform an action that requires administrator authorization";
 
 /* Lock icon tooltips */

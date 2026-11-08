@@ -78,7 +78,8 @@ final class BackendClient {
         while !isStopped {
             let fd = UnixSocketConnector.connect(path: SecureChannel.socketPath(), timeout: 2)
             guard fd >= 0 else {
-                // 连不上：前两次静默重试，第三次尝试拉起守护进程（幂等：已有实例则绑定失败自行退出）。
+                // 连不上：前两次静默重试，第三次尝试拉起守护进程
+                // （幂等：已有实例时新实例会探测到存活 socket 而自行退出）。
                 spawnCounter += 1
                 if spawnCounter >= 3 {
                     spawnCounter = 0

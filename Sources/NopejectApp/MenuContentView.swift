@@ -241,7 +241,7 @@ struct MenuContentView: View {
             Divider()
 
             Button {
-                state.quitAll()
+                Task { await state.quitAll() }
             } label: {
                 Label(L10n.t("menu.quitAll"), systemImage: "power")
             }
@@ -414,6 +414,12 @@ struct PreferencesScreen: View {
                     title: L10n.t("pref.auth.eject.title"),
                     detail: L10n.t("pref.auth.eject.desc"),
                     keyPath: \.requireAuthTemporaryEject
+                )
+                rowDivider
+                toggleRow(
+                    title: L10n.t("pref.auth.quit.title"),
+                    detail: L10n.t("pref.auth.quit.desc"),
+                    keyPath: \.requireAuthQuit
                 )
 
                 sectionHeader(L10n.t("pref.section.recovery"))

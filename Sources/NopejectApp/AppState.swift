@@ -61,6 +61,7 @@ final class AppState: ObservableObject {
         savedConfig.requireAuthOpenUI
             || savedConfig.requireAuthEdit
             || savedConfig.requireAuthTemporaryEject
+            || savedConfig.requireAuthQuit
     }
 
     // MARK: - 生命周期
@@ -321,7 +322,12 @@ final class AppState: ObservableObject {
     }
 
     /// 完全退出：二次确认（红色破坏性按钮）后，先停守护进程，再退出前端。
-    func quitAll() {
+    /// 开启「完全退出需要密码」且处于锁定状态时：验证通过即解锁并继续，取消则不退出。
+    func quitAll() async {
+        if savedConfig.requireAuthQuit && !isUnlocked {
+            guard await authenticate(reason: L10n.t("auth.reason.quit")) else { return }
+            isUnlocked = true
+        }
         let alert = NSAlert()
         alert.messageText = L10n.t("alert.quit.title")
         alert.informativeText = L10n.t("alert.quit.text")

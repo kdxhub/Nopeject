@@ -41,12 +41,14 @@ public struct NopejectConfig: Codable, Equatable {
     public var requireAuthEdit: Bool
     /// 使用临时推出功能需要密码验证。
     public var requireAuthTemporaryEject: Bool
+    /// 完全退出（停止后台保护）需要密码验证。
+    public var requireAuthQuit: Bool
     /// 受保护磁盘被意外推出后尝试重新挂载并通知结果。
     public var remountAfterUnexpectedEject: Bool
 
     enum CodingKeys: String, CodingKey {
         case protectedUUIDs, protectedNames
-        case requireAuthOpenUI, requireAuthEdit, requireAuthTemporaryEject
+        case requireAuthOpenUI, requireAuthEdit, requireAuthTemporaryEject, requireAuthQuit
         case remountAfterUnexpectedEject
         /// 旧版配置的权限模式键（仅用于迁移）。
         case permissionMode
@@ -58,6 +60,7 @@ public struct NopejectConfig: Codable, Equatable {
         requireAuthOpenUI: Bool = false,
         requireAuthEdit: Bool = false,
         requireAuthTemporaryEject: Bool = false,
+        requireAuthQuit: Bool = false,
         remountAfterUnexpectedEject: Bool = false
     ) {
         self.protectedUUIDs = protectedUUIDs
@@ -65,6 +68,7 @@ public struct NopejectConfig: Codable, Equatable {
         self.requireAuthOpenUI = requireAuthOpenUI
         self.requireAuthEdit = requireAuthEdit
         self.requireAuthTemporaryEject = requireAuthTemporaryEject
+        self.requireAuthQuit = requireAuthQuit
         self.remountAfterUnexpectedEject = remountAfterUnexpectedEject
     }
 
@@ -79,20 +83,24 @@ public struct NopejectConfig: Codable, Equatable {
             requireAuthOpenUI = openUI
             requireAuthEdit = try container.decodeIfPresent(Bool.self, forKey: .requireAuthEdit) ?? false
             requireAuthTemporaryEject = try container.decodeIfPresent(Bool.self, forKey: .requireAuthTemporaryEject) ?? false
+            requireAuthQuit = try container.decodeIfPresent(Bool.self, forKey: .requireAuthQuit) ?? false
         } else {
             switch try? container.decodeIfPresent(String.self, forKey: .permissionMode) {
             case "always":
                 requireAuthOpenUI = true
                 requireAuthEdit = true
                 requireAuthTemporaryEject = true
+                requireAuthQuit = true
             case "requireForEdit":
                 requireAuthOpenUI = false
                 requireAuthEdit = true
                 requireAuthTemporaryEject = false
+                requireAuthQuit = false
             default:
                 requireAuthOpenUI = false
                 requireAuthEdit = false
                 requireAuthTemporaryEject = false
+                requireAuthQuit = false
             }
         }
 
@@ -107,6 +115,7 @@ public struct NopejectConfig: Codable, Equatable {
         try container.encode(requireAuthOpenUI, forKey: .requireAuthOpenUI)
         try container.encode(requireAuthEdit, forKey: .requireAuthEdit)
         try container.encode(requireAuthTemporaryEject, forKey: .requireAuthTemporaryEject)
+        try container.encode(requireAuthQuit, forKey: .requireAuthQuit)
         try container.encode(remountAfterUnexpectedEject, forKey: .remountAfterUnexpectedEject)
     }
 

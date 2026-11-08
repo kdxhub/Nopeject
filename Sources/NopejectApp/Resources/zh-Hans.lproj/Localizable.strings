@@ -36,12 +36,14 @@
 "pref.auth.edit.desc" = "切换挂载点的保护开关前需要验证管理员密码。";
 "pref.auth.eject.title" = "临时推出需要密码";
 "pref.auth.eject.desc" = "通过右键菜单或通知进行临时推出前需要验证管理员密码。";
+"pref.auth.quit.title" = "完全退出需要密码";
+"pref.auth.quit.desc" = "完全退出 Nopeject（同时停止后台保护）前需要验证管理员密码。";
 
 "pref.remount.title" = "意外推出后尝试重新挂载";
 "pref.remount.desc" = "受保护挂载点被意外推出后自动尝试重新挂载，并通知恢复结果。";
 
 /* 界面锁定页 */
-"lock.title" = "“Nopeject"”已锁定;
+"lock.title" = "“Nopeject”已锁定";
 "lock.text" = "需要使用用户密码解锁。";
 "lock.verify" = "输入密码";
 
@@ -50,6 +52,7 @@
 "auth.reason.changeSettings" = "更改安全设置";
 "auth.reason.unlock" = "解锁设置";
 "auth.reason.temporaryEject" = "临时推出“%@”";
+"auth.reason.quit" = "完全退出并停止后台保护";
 "auth.reason.generic" = "执行需要管理员授权的操作";
 
 /* 锁图标提示 */

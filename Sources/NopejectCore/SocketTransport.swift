@@ -73,6 +73,10 @@ public enum UnixSocketConnector {
         let fd = socket(AF_UNIX, SOCK_STREAM, 0)
         guard fd >= 0 else { return -1 }
 
+        // 对端已关闭时写 socket 会触发 SIGPIPE；socket 层面禁掉（进程级另有 SIG_IGN 兜底）。
+        var nosigpipe: Int32 = 1
+        setsockopt(fd, SOL_SOCKET, SO_NOSIGPIPE, &nosigpipe, socklen_t(MemoryLayout<Int32>.size))
+
         // 读超时，防止连接后悬挂。
         var tv = timeval(tv_sec: Int(timeout), tv_usec: 0)
         setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &tv, socklen_t(MemoryLayout<timeval>.size))

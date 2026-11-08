@@ -7,6 +7,11 @@ struct NopejectApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @ObservedObject private var state = AppState.shared
 
+    init() {
+        // 忽略 SIGPIPE：daemon 侧断连后继续写 socket 不能带走前端。
+        signal(SIGPIPE, SIG_IGN)
+    }
+
     var body: some Scene {
         MenuBarExtra {
             MenuContentView()
