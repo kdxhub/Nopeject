@@ -105,7 +105,7 @@ struct MenuContentView: View {
         HStack {
             if state.saveState == .saved {
                 // 保存成功的瞬时反馈（自动保存后短暂显示）。
-                Label("✓ \(L10n.t("menu.saved"))", systemImage: "checkmark.circle.fill")
+                Label("\(L10n.t("menu.saved"))", systemImage: "checkmark.circle.fill")
                     .font(.callout.weight(.medium))
                     .foregroundStyle(.green)
                     .transition(.opacity)
