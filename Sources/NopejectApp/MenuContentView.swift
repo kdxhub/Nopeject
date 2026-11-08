@@ -277,8 +277,13 @@ struct MenuContentView: View {
         let target = RowMenuTarget()
         for item in menu.items { item.target = target }
 
-        // popUp 同步阻塞至菜单关闭；at 使用窗口坐标（原点左下）。
-        menu.popUp(positioning: nil, at: event.locationInWindow, in: window.contentView)
+        // popUp 同步阻塞至菜单关闭。at 需要目标视图自身坐标系：
+        // NSHostingView 是翻转的（原点左上），locationInWindow 却是底部原点，
+        // 直接传会把上下镜像；用 convert 自动换算，翻转与否都正确。
+        if let contentView = window.contentView {
+            let point = contentView.convert(event.locationInWindow, from: nil)
+            menu.popUp(positioning: nil, at: point, in: contentView)
+        }
         return nil
     }
 
