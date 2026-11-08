@@ -36,6 +36,14 @@ public enum MountEnumerator {
                 kindRaw = "external"
             }
 
+            let ejectable = (values.volumeIsEjectable ?? false)
+                || (values.volumeIsRemovable ?? false)
+                || kindRaw == "external"
+
+            // 内置且不可弹出的宗卷（如 Macintosh HD 系统盘、内置数据卷）本就无法推出，
+            // 不纳入可保护列表。
+            guard kindRaw != "internal" || ejectable else { return nil }
+
             let bsdName = fs.map { fsValue -> String in
                 let raw = withUnsafeBytes(of: fsValue.f_mntfromname) { buffer -> String in
                     let bytes = buffer.prefix { $0 != 0 }
@@ -57,7 +65,7 @@ public enum MountEnumerator {
                 totalBytes: Int64(values.volumeTotalCapacity ?? 0),
                 freeBytes: values.volumeAvailableCapacityForImportantUsage ?? 0,
                 bsdName: bsdName,
-                isEjectable: (values.volumeIsEjectable ?? false) || (values.volumeIsRemovable ?? false) || kindRaw == "external"
+                isEjectable: ejectable
             )
         }
     }
