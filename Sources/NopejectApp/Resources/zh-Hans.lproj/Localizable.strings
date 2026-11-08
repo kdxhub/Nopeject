@@ -42,6 +42,15 @@
 "notify.locate.body" = "所选项目位于「%@」。打开菜单栏可看到对应条目高亮。";
 "notify.locate.notFound" = "无法确定所选项目所在的挂载点。";
 
+"alert.quit.title" = "确定要完全退出 Nopeject 吗？";
+"alert.quit.text" = "退出将同时停止后台保护服务，受保护的磁盘将不再被拦截推出。";
+"alert.quit.confirm" = "完全退出";
+"alert.quit.cancel" = "取消";
+
+"onboarding.title" = "Nopeject 已在菜单栏运行";
+"onboarding.text" = "本应用常驻屏幕右上角的菜单栏，点击磁盘图标即可管理挂载点保护。此窗口只显示这一次。";
+"onboarding.ok" = "知道了";
+
 "about.version" = "版本 %@";
 "about.tagline" = "保护你的挂载点，防止意外推出。";
 "about.authors" = "作者：Neonai & kdxiaoyi";

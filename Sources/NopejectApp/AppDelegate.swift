@@ -14,6 +14,39 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
 
         // 启动 / 连接后端守护进程，并注册开机自启动。
         AppState.shared.bootstrap()
+
+        // 首次启动引导：本应用常驻菜单栏且无 Dock 图标，提示用户去菜单栏找入口。
+        showOnboardingOnceIfNeeded()
+    }
+
+    // MARK: - 首次启动引导
+
+    private static let onboardingFlag = "nopeject.onboarding.v1.shown"
+
+    private func showOnboardingOnceIfNeeded() {
+        let defaults = UserDefaults.standard
+        guard !defaults.bool(forKey: Self.onboardingFlag) else { return }
+        defaults.set(true, forKey: Self.onboardingFlag)
+
+        // 稍作延迟：让系统通知权限弹窗先出现，避免两个弹窗叠在一起。
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { [weak self] in
+            self?.showOnboarding()
+        }
+    }
+
+    private func showOnboarding() {
+        let alert = NSAlert()
+        alert.messageText = L10n.t("onboarding.title")
+        alert.informativeText = L10n.t("onboarding.text")
+        alert.alertStyle = .informational
+        alert.addButton(withTitle: L10n.t("onboarding.ok"))
+        if let symbol = NSImage(
+            systemSymbolName: "externaldrive.badge.checkmark",
+            accessibilityDescription: nil
+        ) {
+            alert.icon = symbol
+        }
+        alert.runModal()
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {

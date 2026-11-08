@@ -20,6 +20,10 @@ struct MountPointRow: View {
         return L10n.tf("row.subtitle", kind, free)
     }
 
+    private var isHighlighted: Bool {
+        state.highlightUUID == mount.id || state.contextMenuUUID == mount.id
+    }
+
     var body: some View {
         HStack(spacing: 10) {
             Image(nsImage: NSWorkspace.shared.icon(forFile: mount.path))
@@ -57,25 +61,20 @@ struct MountPointRow: View {
         .padding(.horizontal, 12)
         .padding(.vertical, 6)
         .background {
-            if state.highlightUUID == mount.id {
+            if isHighlighted {
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
                     .fill(Color.accentColor.opacity(0.18))
             }
         }
         .contentShape(Rectangle())
-        .contextMenu {
-            Button {
-                state.temporaryEject(mount)
-            } label: {
-                Label(L10n.t("ctx.temporaryEject"), systemImage: "eject.fill")
-            }
-            .disabled(!mount.isEjectable)
-
-            Button {
-                state.revealInFinder(mount)
-            } label: {
-                Label(L10n.t("ctx.revealInFinder"), systemImage: "folder")
-            }
+        .background {
+            RowContextMenu(
+                isEjectable: mount.isEjectable,
+                onOpen: { state.contextMenuUUID = mount.id },
+                onClose: { state.contextMenuUUID = nil },
+                onTemporaryEject: { state.temporaryEject(mount) },
+                onRevealInFinder: { state.revealInFinder(mount) }
+            )
         }
     }
 }

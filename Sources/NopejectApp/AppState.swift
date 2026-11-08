@@ -25,6 +25,8 @@ final class AppState: ObservableObject {
     @Published var backendRunning = false
     @Published var saveState: SaveState = .idle
     @Published var highlightUUID: String?
+    /// 当前右键菜单打开的挂载点 ID（用于高亮该行）。
+    @Published var contextMenuUUID: String?
     @Published var screen: Screen = .main
     @Published var statusMessage: String?
 
@@ -234,8 +236,18 @@ final class AppState: ObservableObject {
         }
     }
 
-    /// 完全退出：先停守护进程，再退出前端。
+    /// 完全退出：二次确认（红色破坏性按钮）后，先停守护进程，再退出前端。
     func quitAll() {
+        let alert = NSAlert()
+        alert.messageText = L10n.t("alert.quit.title")
+        alert.informativeText = L10n.t("alert.quit.text")
+        alert.alertStyle = .warning
+        alert.addButton(withTitle: L10n.t("alert.quit.confirm"))
+        alert.addButton(withTitle: L10n.t("alert.quit.cancel"))
+        alert.buttons.first?.hasDestructiveAction = true
+        alert.buttons.last?.keyEquivalent = "\u{1b}" // Esc 取消
+        guard alert.runModal() == .alertFirstButtonReturn else { return }
+
         client.stop()
         Task.detached {
             BackendClient.sendShutdownOnce()

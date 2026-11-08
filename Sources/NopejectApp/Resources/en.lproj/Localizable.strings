@@ -42,6 +42,15 @@
 "notify.locate.body" = "The selected item belongs to “%@”. Open the menu bar to see it highlighted.";
 "notify.locate.notFound" = "Could not determine the mount point of the selected item.";
 
+"alert.quit.title" = "Quit Nopeject completely?";
+"alert.quit.text" = "Quitting also stops the backend protection service. Protected disks will no longer be blocked from ejection.";
+"alert.quit.confirm" = "Quit Completely";
+"alert.quit.cancel" = "Cancel";
+
+"onboarding.title" = "Nopeject is running in your menu bar";
+"onboarding.text" = "The app lives in the top-right menu bar. Click the disk icon to manage volume protection. This notice is shown only once.";
+"onboarding.ok" = "Got It";
+
 "about.version" = "Version %@";
 "about.tagline" = "Protect your volumes from accidental ejection.";
 "about.authors" = "by Neonai & kdxiaoyi";

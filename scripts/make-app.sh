@@ -21,6 +21,14 @@ if [ -d "$BIN/Nopeject_NopejectApp.bundle" ]; then
     cp -R "$BIN/Nopeject_NopejectApp.bundle" "$APP/Contents/Resources/"
 fi
 
+# 应用图标：由 macOS AppKit 渲染托盘同款 SF Symbol 生成（有缓存则复用）
+ICNS=".build/AppIcon.icns"
+if [ ! -f "$ICNS" ]; then
+    echo "==> 生成应用图标（macOS 渲染托盘同款符号）"
+    swift scripts/gen-icon.swift "$ICNS"
+fi
+cp "$ICNS" "$APP/Contents/Resources/AppIcon.icns"
+
 cat > "$APP/Contents/Info.plist" <<'PLIST'
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -40,6 +48,8 @@ cat > "$APP/Contents/Info.plist" <<'PLIST'
     <string>APPL</string>
     <key>CFBundleExecutable</key>
     <string>Nopeject</string>
+    <key>CFBundleIconFile</key>
+    <string>AppIcon</string>
     <key>LSMinimumSystemVersion</key>
     <string>13.0</string>
     <key>LSUIElement</key>
