@@ -33,6 +33,9 @@ final class AppState: ObservableObject {
     /// 赞助链接。
     static let sponsorURL = URL(string: "http://kdx233.github.io/s/donate/")!
 
+    /// 项目主页。
+    static let githubURL = URL(string: "https://github.com/kdxhub/Nopeject")!
+
     private var client = BackendClient()
     private var editAuthorized = false
     private var pendingSaveContinuation: CheckedContinuation<Void, Never>?

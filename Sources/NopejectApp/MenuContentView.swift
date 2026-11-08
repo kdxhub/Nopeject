@@ -296,6 +296,14 @@ struct AboutScreen: View {
                 Text(L10n.t("about.license"))
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
+                Button {
+                    NSWorkspace.shared.open(AppState.githubURL)
+                } label: {
+                    Label(L10n.t("about.github"), systemImage: "link")
+                        .font(.caption)
+                }
+                .buttonStyle(.borderless)
+                .padding(.top, 4)
             }
             .frame(maxWidth: .infinity)
             .padding(20)
