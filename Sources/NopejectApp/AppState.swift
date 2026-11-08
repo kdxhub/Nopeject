@@ -37,8 +37,9 @@ final class AppState: ObservableObject {
     static let githubURL = URL(string: "https://github.com/kdxhub/Nopeject")!
 
     private var client = BackendClient()
-    /// 打开界面是否已完成密码验证（界面关闭后重置）。
-    @Published var uiAuthorized = false
+    /// 锁定状态（模仿老版 macOS 偏好设置：面板打开时锁上，验证后解锁，
+    /// 面板关闭或手动点锁后重新锁上）。
+    @Published var isUnlocked = false
     /// 正在进行系统身份验证（期间禁止再次发起，避免重复弹出认证框）。
     @Published var isAuthenticating = false
     /// 等待守护进程确认的配置（configSaved 到达后整体回写）。
@@ -50,9 +51,16 @@ final class AppState: ObservableObject {
         pendingProtected != Set(savedConfig.protectedUUIDs)
     }
 
-    /// 界面是否处于锁定状态（开启「打开界面需要密码」且本次打开未验证）。
+    /// 界面是否显示锁定页（开启「打开界面需要密码」且处于锁定状态）。
     var isUILocked: Bool {
-        savedConfig.requireAuthOpenUI && !uiAuthorized
+        savedConfig.requireAuthOpenUI && !isUnlocked
+    }
+
+    /// 是否开启了任一需要密码的操作（决定锁图标是否显示）。
+    var hasAuthSwitches: Bool {
+        savedConfig.requireAuthOpenUI
+            || savedConfig.requireAuthEdit
+            || savedConfig.requireAuthTemporaryEject
     }
 
     // MARK: - 生命周期
@@ -179,10 +187,12 @@ final class AppState: ObservableObject {
 
     // MARK: - 编辑操作
 
-    /// 切换某挂载点的保护状态（开启「编辑保护状态需要密码」时每次都要求验证）。
+    /// 切换某挂载点的保护状态。
+    /// 开启「编辑保护状态需要密码」且处于锁定状态时：验证通过即解锁，本次及后续操作免密。
     func toggle(_ mount: MountPoint, to newValue: Bool) async {
-        if savedConfig.requireAuthEdit {
+        if savedConfig.requireAuthEdit && !isUnlocked {
             guard await authenticate(reason: String(format: L10n.t("auth.reason.toggleProtection"), mount.name)) else { return }
+            isUnlocked = true
         }
         withAnimation(.easeInOut(duration: 0.2)) {
             if newValue {
@@ -209,14 +219,15 @@ final class AppState: ObservableObject {
     }
 
     /// 更新偏好设置开关，随后立即持久化。
-    /// authReason 非空时先做管理员验证（安全类开关），取消验证则不生效。
+    /// 处于锁定状态时（requiresAuth 默认 true）先验证并解锁；取消验证则不生效。
     func setPreference(
         _ keyPath: WritableKeyPath<NopejectConfig, Bool>,
         to value: Bool,
-        authReason: String? = nil
+        requiresAuth: Bool = true
     ) async {
-        if let authReason {
-            guard await authenticate(reason: authReason) else { return }
+        if requiresAuth && !isUnlocked {
+            guard await authenticate(reason: L10n.t("auth.reason.changeSettings")) else { return }
+            isUnlocked = true
         }
         guard savedConfig[keyPath: keyPath] != value else { return }
         var config = savedConfig
@@ -227,13 +238,20 @@ final class AppState: ObservableObject {
             pendingSaveContinuation = continuation
             client.send(IPCMessage.encode(IPCMessage.setConfig, config))
         }
+        // 开启「打开界面需要密码」后面板立即回到锁定态：只呈现锁定页，
+        // 不自动弹出验证，由用户点锁决定何时解锁。
+        if keyPath == \.requireAuthOpenUI && value {
+            isUnlocked = false
+        }
     }
 
-    /// 打开界面时的密码验证（开启「打开界面需要密码」时自动触发）。
-    func authorizeUIIfNeeded() async {
-        guard isUILocked, !isAuthenticating else { return }
-        if await authenticate(reason: L10n.t("auth.reason.openUI")) {
-            uiAuthorized = true
+    /// 点击锁图标：解锁状态直接锁上；锁定状态发起验证，通过后解锁。
+    func toggleLock() async {
+        if isUnlocked {
+            withAnimation(.easeInOut(duration: 0.2)) { isUnlocked = false }
+        } else {
+            guard await authenticate(reason: L10n.t("auth.reason.unlock")) else { return }
+            withAnimation(.easeInOut(duration: 0.2)) { isUnlocked = true }
         }
     }
 
@@ -254,12 +272,13 @@ final class AppState: ObservableObject {
     }
 
     /// 按挂载点 ID（uuid 或路径）临时推出，供通知点击等没有完整 MountPoint 的场景使用。
-    /// 开启「临时推出需要密码」时先验证再放行。
+    /// 开启「临时推出需要密码」且处于锁定状态时先验证再放行。
     func temporaryEject(id: String, volumeName: String? = nil) async {
         guard !id.isEmpty else { return }
-        if savedConfig.requireAuthTemporaryEject {
+        if savedConfig.requireAuthTemporaryEject && !isUnlocked {
             let name = volumeName ?? id
             guard await authenticate(reason: String(format: L10n.t("auth.reason.temporaryEject"), name)) else { return }
+            isUnlocked = true
         }
         client.send(IPCMessage(action: IPCMessage.ejectOnce, data: id))
     }

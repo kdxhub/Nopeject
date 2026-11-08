@@ -31,7 +31,7 @@
 "pref.section.recovery" = "Eject Recovery";
 
 "pref.auth.openUI.title" = "Require Password to Open";
-"pref.auth.openUI.desc" = "Verifying the administrator password is required to open the Nopeject panel.";
+"pref.auth.openUI.desc" = "The Nopeject panel opens locked; click the lock icon and verify the administrator password to unlock. It locks again when the panel closes.";
 "pref.auth.edit.title" = "Require Password to Edit Protection";
 "pref.auth.edit.desc" = "Verifying the administrator password is required before toggling a mount point's protection.";
 "pref.auth.eject.title" = "Require Password to Eject Temporarily";
@@ -48,9 +48,13 @@
 /* Authentication reason: the system dialog reads ““Nopeject” wants to” + this text, so keep verb phrases only */
 "auth.reason.toggleProtection" = "change the protection status of “%@”";
 "auth.reason.changeSettings" = "change the security settings";
-"auth.reason.openUI" = "open its control panel";
+"auth.reason.unlock" = "unlock the settings";
 "auth.reason.temporaryEject" = "temporarily eject “%@”";
 "auth.reason.generic" = "perform an action that requires administrator authorization";
+
+/* Lock icon tooltips */
+"lock.tip.unlock" = "Locked — click to unlock";
+"lock.tip.lock" = "Unlocked — click to lock";
 
 "notify.blocked.title" = "Eject Blocked";
 "notify.blocked.body" = "“%@” is protected by Nopeject. Click this to eject it once.";

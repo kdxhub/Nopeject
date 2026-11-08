@@ -31,7 +31,7 @@
 "pref.section.recovery" = "推出恢复";
 
 "pref.auth.openUI.title" = "打开界面需要密码";
-"pref.auth.openUI.desc" = "打开 Nopeject 面板时需要验证管理员密码。";
+"pref.auth.openUI.desc" = "打开 Nopeject 面板时默认锁定，点击锁图标验证管理员密码后解锁，面板关闭后重新锁定。";
 "pref.auth.edit.title" = "编辑保护状态需要密码";
 "pref.auth.edit.desc" = "切换挂载点的保护开关前需要验证管理员密码。";
 "pref.auth.eject.title" = "临时推出需要密码";
@@ -48,9 +48,13 @@
 /* 认证原因：系统界面会拼接为「“Nopeject”想要 + 此文本」，故只写动词短语 */
 "auth.reason.toggleProtection" = "修改“%@”的保护状态";
 "auth.reason.changeSettings" = "更改安全设置";
-"auth.reason.openUI" = "打开控制面板";
+"auth.reason.unlock" = "解锁设置";
 "auth.reason.temporaryEject" = "临时推出“%@”";
 "auth.reason.generic" = "执行需要管理员授权的操作";
+
+/* 锁图标提示 */
+"lock.tip.unlock" = "已锁定，点击解锁";
+"lock.tip.lock" = "已解锁，点击锁定";
 
 "notify.blocked.title" = "已阻止推出";
 "notify.blocked.body" = "“%@”受 Nopeject 保护而无法推出。点击此处以临时推出。";

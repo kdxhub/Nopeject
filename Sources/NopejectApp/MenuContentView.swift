@@ -48,12 +48,12 @@ struct MenuContentView: View {
         .onAppear {
             state.refresh()
             installRightClickMonitor()
-            // 「打开界面需要密码」开启时，界面一打开即发起验证。
-            Task { await state.authorizeUIIfNeeded() }
+            // 每次打开面板都从锁定状态开始（模仿老版 macOS，验证后解锁直至面板关闭）。
+            state.isUnlocked = false
         }
-        // 界面关闭后重置验证状态，下次打开需重新验证。
+        // 界面关闭后重新锁上，下次打开需重新验证。
         .onDisappear {
-            state.uiAuthorized = false
+            state.isUnlocked = false
         }
         .nopejectPanelBackground()
     }
@@ -73,7 +73,7 @@ struct MenuContentView: View {
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
             Button(L10n.t("lock.verify")) {
-                Task { await state.authorizeUIIfNeeded() }
+                Task { await state.toggleLock() }
             }
             .buttonStyle(.borderedProminent)
             .controlSize(.small)
@@ -179,7 +179,10 @@ struct MenuContentView: View {
     }
 
     private var footer: some View {
-        HStack {
+        HStack(spacing: 8) {
+            if state.hasAuthSwitches {
+                LockIconButton()
+            }
             if state.saveState == .saved {
                 // 保存成功的瞬时反馈（自动保存后短暂显示）。
                 Label("\(L10n.t("menu.saved"))", systemImage: "checkmark.circle.fill")
@@ -343,6 +346,27 @@ private final class RowMenuTarget: NSObject {
     }
 }
 
+// MARK: - 锁图标按钮
+
+/// 模仿老版 macOS 偏好设置的锁：锁定时点击发起验证解锁，解锁时点击重新锁上。
+/// 主界面放在左下角，偏好设置页放在右上角；未启用任何密码开关时隐藏。
+struct LockIconButton: View {
+    @ObservedObject private var state = AppState.shared
+
+    var body: some View {
+        Button {
+            Task { await state.toggleLock() }
+        } label: {
+            Image(systemName: state.isUnlocked ? "lock.open" : "lock.fill")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(state.isUnlocked ? Color.secondary : Color.primary)
+        }
+        .buttonStyle(.plain)
+        .help(state.isUnlocked ? L10n.t("lock.tip.lock") : L10n.t("lock.tip.unlock"))
+        .animation(.easeInOut(duration: 0.2), value: state.isUnlocked)
+    }
+}
+
 // MARK: - 偏好设置
 
 /// 偏好设置：「安全」（按操作细分的三项密码开关）与「推出恢复」。
@@ -360,8 +384,12 @@ struct PreferencesScreen: View {
                 Text(L10n.t("menu.security"))
                     .font(.headline)
                 Spacer()
-                // 平衡布局的占位
-                Image(systemName: "chevron.left").opacity(0)
+                if state.hasAuthSwitches {
+                    LockIconButton()
+                } else {
+                    // 平衡布局的占位
+                    Image(systemName: "chevron.left").opacity(0)
+                }
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 10)
@@ -416,7 +444,7 @@ struct PreferencesScreen: View {
             .padding(.bottom, 6)
     }
 
-    /// 单个开关行；安全类开关（requiresAuth 默认 true）切换前需管理员验证。
+    /// 单个开关行；锁定状态下（requiresAuth 默认 true）切换先验证并解锁，之后免密。
     private func toggleRow(
         title: String,
         detail: String,
@@ -437,11 +465,7 @@ struct PreferencesScreen: View {
                 get: { state.savedConfig[keyPath: keyPath] },
                 set: { newValue in
                     Task {
-                        await state.setPreference(
-                            keyPath,
-                            to: newValue,
-                            authReason: requiresAuth ? L10n.t("auth.reason.changeSettings") : nil
-                        )
+                        await state.setPreference(keyPath, to: newValue, requiresAuth: requiresAuth)
                     }
                 }
             ))
