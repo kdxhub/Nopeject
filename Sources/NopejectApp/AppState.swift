@@ -28,8 +28,8 @@ final class AppState: ObservableObject {
     @Published var screen: Screen = .main
     @Published var statusMessage: String?
 
-    /// 赞助链接（发布时替换为实际地址）。
-    static let sponsorURL = URL(string: "https://afdian.com/a/neonai")!
+    /// 赞助链接（GitHub Sponsors，发布时确认实际地址）。
+    static let sponsorURL = URL(string: "https://github.com/sponsors/Neonai")!
 
     private var client = BackendClient()
     private var editAuthorized = false
@@ -50,6 +50,7 @@ final class AppState: ObservableObject {
         Notifier.requestPermissionIfNeeded()
         registerLoginItem()
         startClient()
+        startPeriodicRefresh()
     }
 
     private func registerLoginItem() {
@@ -82,6 +83,25 @@ final class AppState: ObservableObject {
             }
         }
         client.start()
+    }
+
+    // MARK: - 数据刷新
+
+    /// 菜单打开或周期触发时向守护进程请求最新数据，
+    /// 确保重启前端、前端与后端状态漂移等场景下列表始终正确。
+    func refresh() {
+        client.send(IPCMessage(action: IPCMessage.getMountPoints))
+        client.send(IPCMessage(action: IPCMessage.getConfig))
+    }
+
+    private func startPeriodicRefresh() {
+        Task { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: 10_000_000_000)
+                guard let self, self.backendRunning else { continue }
+                self.client.send(IPCMessage(action: IPCMessage.getMountPoints))
+            }
+        }
     }
 
     // MARK: - 消息处理
@@ -159,11 +179,13 @@ final class AppState: ObservableObject {
                 pendingProtected.remove(mount.id)
             }
         }
+        // 即改即存，无需手动保存。
+        await save()
     }
 
     /// 保存配置到守护进程。
     func save() async {
-        guard hasPendingEdits || savedConfig.permissionMode != permissionMode else { return }
+        guard hasPendingEdits else { return }
         setSaveState(.saving)
         var config = savedConfig
         config.protectedUUIDs = Array(pendingProtected).sorted()

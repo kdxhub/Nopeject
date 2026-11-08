@@ -2,9 +2,10 @@ import SwiftUI
 import AppKit
 import NopejectCore
 
-/// 菜单主内容：顶部项目名 + 后端状态点、挂载点列表、底部保存按钮与“…”二级菜单。
+/// 菜单主内容：顶部项目名 + 后端状态点、挂载点列表、底部状态与“…”二级菜单。
 struct MenuContentView: View {
     @ObservedObject private var state = AppState.shared
+    @State private var listContentHeight: CGFloat = 0
 
     var body: some View {
         Group {
@@ -15,10 +16,35 @@ struct MenuContentView: View {
             }
         }
         .frame(width: 380)
+        .onAppear { state.refresh() }
         .nopejectPanelBackground()
     }
 
     // MARK: - 主界面
+
+    /// 列表区域的最大高度：整体面板不超过屏幕可视高度的 45%。
+    /// 内容不超过该值时窗口随内容自动拉高，超出后才出现滚动。
+    private var maxListHeight: CGFloat {
+        let screenHeight = NSScreen.main?.visibleFrame.height ?? 900
+        return max(160, screenHeight * 0.45 - 110)
+    }
+
+    private var mountList: some View {
+        VStack(spacing: 0) {
+            ForEach(state.mountPoints) { mount in
+                MountPointRow(mount: mount)
+                if mount.id != state.mountPoints.last?.id {
+                    Divider().padding(.leading, 44)
+                }
+            }
+        }
+        .padding(.vertical, 4)
+        .onGeometryChange(for: CGFloat.self, of: { proxy in
+            proxy.size.height
+        }, action: { newValue in
+            listContentHeight = newValue
+        })
+    }
 
     private var mainScreen: some View {
         VStack(spacing: 0) {
@@ -36,18 +62,13 @@ struct MenuContentView: View {
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 24)
-            } else {
+            } else if listContentHeight > maxListHeight {
                 ScrollView {
-                    VStack(spacing: 0) {
-                        ForEach(state.mountPoints) { mount in
-                            MountPointRow(mount: mount)
-                            if mount.id != state.mountPoints.last?.id {
-                                Divider().padding(.leading, 44)
-                            }
-                        }
-                    }
-                    .padding(.vertical, 4)
+                    mountList
                 }
+                .frame(height: maxListHeight)
+            } else {
+                mountList
             }
 
             Divider().padding(.horizontal, 8)
@@ -75,11 +96,13 @@ struct MenuContentView: View {
 
     private var footer: some View {
         HStack {
-            if state.hasPendingEdits || state.saveState != .idle {
-                saveButton
-                    .transition(.scale.combined(with: .opacity))
-            }
-            if let message = state.statusMessage {
+            if state.saveState == .saved {
+                // 保存成功的瞬时反馈（自动保存后短暂显示）。
+                Label("✓ \(L10n.t("menu.saved"))", systemImage: "checkmark.circle.fill")
+                    .font(.callout.weight(.medium))
+                    .foregroundStyle(.green)
+                    .transition(.opacity)
+            } else if let message = state.statusMessage {
                 Text(message)
                     .font(.caption2)
                     .foregroundStyle(.secondary)
@@ -90,37 +113,7 @@ struct MenuContentView: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
-        .animation(.spring(duration: 0.35), value: state.saveState)
-        .animation(.spring(duration: 0.35), value: state.hasPendingEdits)
-    }
-
-    @ViewBuilder
-    private var saveButton: some View {
-        switch state.saveState {
-        case .idle:
-            Button {
-                Task { await state.save() }
-            } label: {
-                Label(L10n.t("menu.save"), systemImage: "tray.and.arrow.down")
-            }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.small)
-
-        case .saving:
-            HStack(spacing: 6) {
-                ProgressView()
-                    .controlSize(.small)
-                Text(L10n.t("menu.saving"))
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-            }
-
-        case .saved:
-            // 苹果风格「✓ 已保存」
-            Label("✓ \(L10n.t("menu.saved"))", systemImage: "checkmark.circle.fill")
-                .font(.callout.weight(.medium))
-                .foregroundStyle(.green)
-        }
+        .animation(.easeInOut(duration: 0.25), value: state.saveState)
     }
 
     private var moreMenu: some View {
@@ -145,8 +138,15 @@ struct MenuContentView: View {
 
             Divider()
 
-            Button {
-                NSWorkspace.shared.open(AppState.sponsorURL)
+            Menu {
+                // 始终禁用的说明项。
+                Button(L10n.t("menu.sponsor.note")) {}
+                    .disabled(true)
+                Button {
+                    NSWorkspace.shared.open(AppState.sponsorURL)
+                } label: {
+                    Label(L10n.t("menu.sponsor.github"), systemImage: "heart.circle")
+                }
             } label: {
                 Label(L10n.t("menu.sponsor"), systemImage: "heart")
             }

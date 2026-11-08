@@ -6,12 +6,11 @@
 "row.kind.internal" = "Internal disk";
 "row.kind.external" = "External disk";
 "row.kind.network" = "Network volume";
+"row.subtitle" = "%1$@ · %2$@ free";
 
 "list.empty" = "No mountable volumes";
 "list.disconnected" = "Connecting to backend…";
 
-"menu.save" = "Save";
-"menu.saving" = "Saving…";
 "menu.saved" = "Saved";
 
 "ctx.temporaryEject" = "Eject Temporarily";
@@ -22,6 +21,8 @@
 "menu.about" = "About";
 "menu.quitAll" = "Quit Completely";
 "menu.sponsor" = "Sponsor";
+"menu.sponsor.note" = "Nopeject is fully open-source and free — sponsoring is never required for any feature.";
+"menu.sponsor.github" = "Sponsor on GitHub";
 "menu.quitFrontend" = "Quit Frontend Only";
 
 "perm.mode.none" = "None";

@@ -57,13 +57,21 @@ public enum MountEnumerator {
             }
             let uuid = volumeUUID(bsdName: bsdName)
 
+            // 可用空间以 statfs 为准：volumeAvailableCapacityForImportantUsageKey
+            // 在 Time Machine 目标宗卷等场景会返回 0，statfs 的 f_bavail 与 df 一致。
+            let blockSize = Int64(fs?.f_bsize ?? 0)
+            let freeBytes = (fs.map { Int64($0.f_bavail) * blockSize }) ?? (values.volumeAvailableCapacityForImportantUsage ?? 0)
+            let totalBytes = (fs.map { Int64($0.f_blocks) * blockSize })
+                .flatMap { $0 > 0 ? $0 : nil }
+                ?? Int64(values.volumeTotalCapacity ?? 0)
+
             return MountPoint(
                 uuid: uuid,
                 name: values.volumeName ?? url.lastPathComponent,
                 path: path,
                 kindRaw: kindRaw,
-                totalBytes: Int64(values.volumeTotalCapacity ?? 0),
-                freeBytes: values.volumeAvailableCapacityForImportantUsage ?? 0,
+                totalBytes: totalBytes,
+                freeBytes: freeBytes,
                 bsdName: bsdName,
                 isEjectable: ejectable
             )

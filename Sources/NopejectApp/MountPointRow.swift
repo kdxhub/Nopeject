@@ -3,8 +3,8 @@ import AppKit
 import NopejectCore
 
 /// 单个挂载点条目：
-/// 左侧系统原生宗卷图标；右侧第一行加粗名称，第二行淡化显示类型 / 位置 / 容量；
-/// 最右为开关（开启 = 阻止推出）。右键提供临时弹出、在“访达”中显示。
+/// 左侧系统原生宗卷图标；右侧第一行加粗名称，第二行淡化显示介质类型与可用空间，
+/// 第三行淡化显示挂载点路径；最右为开关（开启 = 阻止推出）。右键提供临时弹出、在“访达”中显示。
 struct MountPointRow: View {
     let mount: MountPoint
     @ObservedObject private var state = AppState.shared
@@ -13,11 +13,11 @@ struct MountPointRow: View {
         state.pendingProtected.contains(mount.id)
     }
 
+    /// 第二行：介质类型 + 明确标注「可用」的剩余空间。
     private var subtitle: String {
         let kind = L10n.t("row.kind.\(mount.kindRaw)")
         let free = CapacityFormatter.format(mount.freeBytes)
-        let total = CapacityFormatter.format(mount.totalBytes)
-        return "\(kind) · \(mount.path) · \(free) / \(total)"
+        return L10n.tf("row.subtitle", kind, free)
     }
 
     var body: some View {
@@ -33,6 +33,11 @@ struct MountPointRow: View {
                 Text(subtitle)
                     .font(.caption2)
                     .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                Text(mount.path)
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
                     .lineLimit(1)
                     .truncationMode(.middle)
             }

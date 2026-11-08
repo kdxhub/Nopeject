@@ -6,12 +6,11 @@
 "row.kind.internal" = "内置磁盘";
 "row.kind.external" = "外置磁盘";
 "row.kind.network" = "网络宗卷";
+"row.subtitle" = "%1$@ · 可用 %2$@";
 
 "list.empty" = "没有可显示的挂载点";
 "list.disconnected" = "正在连接后端…";
 
-"menu.save" = "保存";
-"menu.saving" = "正在保存…";
 "menu.saved" = "已保存";
 
 "ctx.temporaryEject" = "临时弹出";
@@ -22,6 +21,8 @@
 "menu.about" = "关于";
 "menu.quitAll" = "完全退出";
 "menu.sponsor" = "赞助";
+"menu.sponsor.note" = "本软件完全开源免费，不赞助不会影响任何功能";
+"menu.sponsor.github" = "在 GitHub 赞助";
 "menu.quitFrontend" = "退出前端";
 
 "perm.mode.none" = "无";
