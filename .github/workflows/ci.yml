@@ -32,9 +32,19 @@ jobs:
       - name: Package .app bundle
         run: bash scripts/make-app.sh
 
-      - name: Upload artifact
+      - name: Package .pkg installer
+        run: bash scripts/make-pkg.sh
+
+      - name: Upload .app artifact
         uses: actions/upload-artifact@v4
         with:
           name: Nopeject-${{ matrix.runner }}
           path: dist/Nopeject.app
+          if-no-files-found: error
+
+      - name: Upload .pkg artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Nopeject-pkg-${{ matrix.runner }}
+          path: dist/Nopeject.pkg
           if-no-files-found: error

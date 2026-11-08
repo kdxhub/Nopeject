@@ -62,6 +62,7 @@ Nopeject 将在后台启动一个守护服务（`nopejectd`），通过相关系
 swift build                 # Debug 构建
 swift build -c release      # Release 构建
 bash scripts/make-app.sh    # 打包 dist/Nopeject.app
+bash scripts/make-pkg.sh    # 将 dist/Nopeject.app 打包为 dist/Nopeject.pkg
 ```
 
 ## 技术栈
