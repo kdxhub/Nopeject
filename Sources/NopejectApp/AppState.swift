@@ -30,8 +30,8 @@ final class AppState: ObservableObject {
     @Published var screen: Screen = .main
     @Published var statusMessage: String?
 
-    /// 赞助链接（GitHub Sponsors，发布时确认实际地址）。
-    static let sponsorURL = URL(string: "https://github.com/sponsors/Neonai")!
+    /// 赞助链接。
+    static let sponsorURL = URL(string: "http://kdx233.github.io/s/donate/")!
 
     private var client = BackendClient()
     private var editAuthorized = false

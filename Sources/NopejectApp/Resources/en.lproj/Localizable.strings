@@ -6,7 +6,7 @@
 "row.kind.internal" = "Internal disk";
 "row.kind.external" = "External disk";
 "row.kind.network" = "Network volume";
-"row.subtitle" = "%1$@ · %2$@ free";
+"row.subtitle" = "%1$@ · %2$@ / %3$@ free";
 
 "list.empty" = "No mountable volumes";
 "list.disconnected" = "Connecting to backend…";
@@ -21,8 +21,8 @@
 "menu.about" = "About";
 "menu.quitAll" = "Quit Completely";
 "menu.sponsor" = "Sponsor";
-"menu.sponsor.note" = "Nopeject is fully open-source and free — sponsoring is never required for any feature.";
-"menu.sponsor.github" = "Sponsor on GitHub";
+"menu.sponsor.note" = "Nopeject is fully open-source and free \n— sponsoring is never required for any feature.";
+"menu.sponsor.blog" = "Author's Blog Website";
 "menu.quitFrontend" = "Quit Frontend Only";
 
 "perm.mode.none" = "None";
@@ -31,12 +31,12 @@
 "perm.desc.edit" = "Verifying the administrator password is required once before editing; the verification resets after saving.";
 "perm.mode.always" = "Always Require Permission";
 "perm.desc.always" = "Every edit operation — and viewing the editor — requires verifying the administrator password.";
-"perm.hint" = "Switching between modes always requires the administrator password.";
+"perm.hint" = "Switching between modes may require the administrator authorization.";
 
-"auth.prompt" = "Nopeject needs administrator authorization";
+"auth.prompt" = "Nopeject wants to make changes";
 
 "notify.blocked.title" = "Eject Blocked";
-"notify.blocked.body" = "“%@” is protected by Nopeject. To eject it, use “Eject Temporarily” from the menu.";
+"notify.blocked.body" = "“%@” is protected by Nopeject. To eject it, use “Eject Temporarily” from the app menu.";
 
 "notify.locate.title" = "Mount Point Located";
 "notify.locate.body" = "The selected item belongs to “%@”. Open the menu bar to see it highlighted.";
@@ -48,10 +48,10 @@
 "alert.quit.cancel" = "Cancel";
 
 "onboarding.title" = "Nopeject is running in your menu bar";
-"onboarding.text" = "The app lives in the top-right menu bar. Click the disk icon to manage volume protection. This notice is shown only once.";
+"onboarding.text" = "Nopeject will run disk ejection protection in the background. To manage it, use the icon in the menu bar at the top of the screen.\nNopeject needs the “Notifications,” “Open at Login,” and “App Background Activity” permissions to run.\nThis window will only be shown once.";
 "onboarding.ok" = "Got It";
 
 "about.version" = "Version %@";
 "about.tagline" = "Protect your volumes from accidental ejection.";
 "about.authors" = "by Neonai & kdxiaoyi";
-"about.license" = "Released under the MIT License.";
+"about.license" = "Released under the MIT License without charges.";

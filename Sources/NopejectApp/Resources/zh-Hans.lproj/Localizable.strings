@@ -6,14 +6,14 @@
 "row.kind.internal" = "内置磁盘";
 "row.kind.external" = "外置磁盘";
 "row.kind.network" = "网络宗卷";
-"row.subtitle" = "%1$@ · 可用 %2$@";
+"row.subtitle" = "%1$@ · %2$@ / %3$@ 可用";
 
 "list.empty" = "没有可显示的挂载点";
 "list.disconnected" = "正在连接后端…";
 
 "menu.saved" = "已保存";
 
-"ctx.temporaryEject" = "临时弹出";
+"ctx.temporaryEject" = "临时推出";
 "ctx.revealInFinder" = "在“访达”中显示";
 
 "menu.restartService" = "强制重启服务";
@@ -21,8 +21,8 @@
 "menu.about" = "关于";
 "menu.quitAll" = "完全退出";
 "menu.sponsor" = "赞助";
-"menu.sponsor.note" = "本软件完全开源免费，不赞助不会影响任何功能";
-"menu.sponsor.github" = "在 GitHub 赞助";
+"menu.sponsor.note" = "本软件完全开源免费，不赞助不影响任何功能";
+"menu.sponsor.blog" = "作者个人博客";
 "menu.quitFrontend" = "退出前端";
 
 "perm.mode.none" = "无";
@@ -31,12 +31,12 @@
 "perm.desc.edit" = "进入编辑前需要验证一次管理员密码，保存后验证状态重置。";
 "perm.mode.always" = "始终需要权限";
 "perm.desc.always" = "每次编辑操作、查看编辑内容均需验证管理员密码。";
-"perm.hint" = "切换模式本身始终需要验证管理员密码。";
+"perm.hint" = "可能需要验证管理员身份。";
 
-"auth.prompt" = "Nopeject 需要管理员授权";
+"auth.prompt" = "Nopeject 想要执行变更";
 
 "notify.blocked.title" = "已阻止推出";
-"notify.blocked.body" = "「%@」受 Nopeject 保护。如需弹出，请在菜单中使用「临时弹出」。";
+"notify.blocked.body" = "“%@”受 Nopeject 保护而无法推出。如需推出，请在 App 菜单中使用“临时推出”。";
 
 "notify.locate.title" = "已定位挂载点";
 "notify.locate.body" = "所选项目位于「%@」。打开菜单栏可看到对应条目高亮。";
@@ -47,11 +47,11 @@
 "alert.quit.confirm" = "完全退出";
 "alert.quit.cancel" = "取消";
 
-"onboarding.title" = "Nopeject 已在菜单栏运行";
-"onboarding.text" = "本应用常驻屏幕右上角的菜单栏，点击磁盘图标即可管理挂载点保护。此窗口只显示这一次。";
-"onboarding.ok" = "知道了";
+"onboarding.title" = "Nopeject 已在运行";
+"onboarding.text" = "Nopeject 将在后台运行推出保护，如需管理请使用顶部菜单栏的图标。\nNopeject 需要“通知”、“登录时打开”与“App 后台活动”权限才能运行。\n此窗口只显示这一次。";
+"onboarding.ok" = "好";
 
 "about.version" = "版本 %@";
 "about.tagline" = "保护你的挂载点，防止意外推出。";
 "about.authors" = "作者：Neonai & kdxiaoyi";
-"about.license" = "基于 MIT 许可证发布。";
+"about.license" = "基于 MIT 许可证免费发布";

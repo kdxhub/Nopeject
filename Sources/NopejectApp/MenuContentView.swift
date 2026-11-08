@@ -16,6 +16,7 @@ struct MenuContentView: View {
             }
         }
         .frame(width: 380)
+        .animation(.spring(duration: 0.35), value: state.screen)
         .onAppear { state.refresh() }
         .nopejectPanelBackground()
     }
@@ -42,7 +43,10 @@ struct MenuContentView: View {
         .onGeometryChange(for: CGFloat.self, of: { proxy in
             proxy.size.height
         }, action: { newValue in
-            listContentHeight = newValue
+            // 内容高度变化（挂载点增减、窗口拉高）统一走弹簧动画。
+            withAnimation(.spring(duration: 0.35)) {
+                listContentHeight = newValue
+            }
         })
     }
 
@@ -62,6 +66,7 @@ struct MenuContentView: View {
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 24)
+                .transition(.opacity.combined(with: .move(edge: .top)))
             } else if listContentHeight > maxListHeight {
                 ScrollView {
                     mountList
@@ -74,6 +79,8 @@ struct MenuContentView: View {
             Divider().padding(.horizontal, 8)
             footer
         }
+        .animation(.spring(duration: 0.35), value: state.mountPoints.count)
+        .animation(.spring(duration: 0.35), value: listContentHeight > maxListHeight)
     }
 
     private var header: some View {
@@ -145,7 +152,7 @@ struct MenuContentView: View {
                 Button {
                     NSWorkspace.shared.open(AppState.sponsorURL)
                 } label: {
-                    Label(L10n.t("menu.sponsor.github"), systemImage: "heart.circle")
+                    Label(L10n.t("menu.sponsor.blog"), systemImage: "heart.circle")
                 }
             } label: {
                 Label(L10n.t("menu.sponsor"), systemImage: "heart")
@@ -184,13 +191,9 @@ struct SecurityScreen: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack {
-                Button {
+                BackButton {
                     state.screen = .main
-                } label: {
-                    Image(systemName: "chevron.left")
                 }
-                .buttonStyle(.borderless)
-                .controlSize(.small)
                 Spacer()
                 Text(L10n.t("menu.security"))
                     .font(.headline)
@@ -260,13 +263,9 @@ struct AboutScreen: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack {
-                Button {
+                BackButton {
                     state.screen = .main
-                } label: {
-                    Image(systemName: "chevron.left")
                 }
-                .buttonStyle(.borderless)
-                .controlSize(.small)
                 Spacer()
                 Text(L10n.t("menu.about"))
                     .font(.headline)

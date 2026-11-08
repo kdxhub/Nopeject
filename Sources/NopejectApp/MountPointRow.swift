@@ -13,11 +13,12 @@ struct MountPointRow: View {
         state.pendingProtected.contains(mount.id)
     }
 
-    /// 第二行：介质类型 + 明确标注「可用」的剩余空间。
+    /// 第二行：介质类型 +「可用 / 总量」明确标注的剩余空间。
     private var subtitle: String {
         let kind = L10n.t("row.kind.\(mount.kindRaw)")
         let free = CapacityFormatter.format(mount.freeBytes)
-        return L10n.tf("row.subtitle", kind, free)
+        let total = CapacityFormatter.format(mount.totalBytes)
+        return L10n.tf("row.subtitle", kind, free, total)
     }
 
     private var isHighlighted: Bool {

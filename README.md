@@ -2,13 +2,15 @@
 
 Nopeject 是一个轻量级 macOS 菜单栏应用，通过系统回调阻止直接弹出特定宗卷、虚拟磁盘等挂载点。
 
-> 本项目与 Noject 没有任何从属关系或关联，亦与其开发者 scaleninja 无关。
+> 本项目与 Noject 没有任何从属关系或关联，亦与其开发者 ScaleNinja 无关。
 
 ## 功能
 
-* 轻量级 App
-* 拦截对大部分挂载点的推出
-* 拦截成功将发送通知
+* 极其轻量的 App，没有多余功能——遥测、借钱、短视频……
+* 服务分离，退出 GUI 也不影响拦截
+* 双击即用、快速配置
+* 拦截成功进行通知
+* 完全开源免费
 
 ## 实现原理
 
@@ -18,9 +20,9 @@ Nopeject 将在后台启动一个守护服务（`nopejectd`），通过相关系
 
 ```
 ┌────────────────────────┐        Unix Domain Socket         ┌────────────────────────┐
-│  Nopeject（前端）       │  ── HMAC-SHA256 挑战-应答 ──▶     │  nopejectd（后端）      │
-│  菜单栏 MenuBarExtra   │  ◀── JSON 行协议 ──               │  DiskArbitration 拦截  │
-│  SwiftUI + 液态玻璃    │                                   │  UserDefaults 持久化   │
+│  Nopeject（前端）       │  ── HMAC-SHA256 挑战-应答 →         │  nopejectd（后端）      │
+│  菜单栏 MenuBarExtra    │  ← JSON 行协议          ──         │  DiskArbitration 拦截   │
+│  SwiftUI + 液态玻璃     │                                   │  UserDefaults 持久化    │
 └────────────────────────┘                                   └────────────────────────┘
 ```
 
@@ -28,7 +30,7 @@ Nopeject 将在后台启动一个守护服务（`nopejectd`），通过相关系
 * **后端**：调用 `DARegisterDiskUnmountApprovalCallback` 注册卸载审批回调；回调中经 `DADiskCopyDescription` 取得宗卷 UUID（`kDADiskDescriptionVolumeUUIDKey`）与保护列表比对，命中则构造 `DADissenter`（`kDAReturnNotPermitted`）拒绝推出，否则放行。保护列表以 UUID 存入 UserDefaults，重启后依然生效。
 * **通信**：Unix domain socket + JSON 行协议。后端与前端断连时**不报错、不退出、不终止**——前端可以单独退出，后端继续独立承担拦截职责。拦截成功后尝试连接前端广播事件，未连接则静默忽略。
 
-### 安全模型（抗审计的本地 IPC）
+### 安全模型
 
 1. socket 固定路径（`~/Library/Application Support/Nopeject/ipc.sock`），文件 0600、目录 0700，其他用户无法触达；
 2. 握手前经 `getpeereid` 校验对端 uid 与本进程一致；
@@ -43,8 +45,6 @@ Nopeject 将在后台启动一个守护服务（`nopejectd`），通过相关系
 * **编辑需要权限**：进入编辑（切换保护开关）前需验证一次管理员密码，保存后验证状态重置；
 * **始终需要权限**：每次编辑操作、查看编辑内容均需验证管理员密码。
 
-模式之间的切换本身始终需要验证管理员密码（系统授权对话框）。
-
 ### 系统能力
 
 * **开机自启动**：macOS 13+ 使用 `SMAppService.mainApp.register()`；
@@ -54,17 +54,13 @@ Nopeject 将在后台启动一个守护服务（`nopejectd`），通过相关系
 
 ## 构建
 
-依赖：Swift 5.9+ 工具链（Xcode 26 可编译液态玻璃路径，旧工具链自动降级为高斯模糊）。
+依赖：Swift 5.9+ 工具链（Xcode 26 可编译 LiquidGlass 路径，旧工具链自动降级为高斯模糊）。
 
 ```bash
 swift build                 # Debug 构建
 swift build -c release      # Release 构建
 bash scripts/make-app.sh    # 打包 dist/Nopeject.app
 ```
-
-VSCode 用户可直接使用 `.vscode/tasks.json` 中的构建任务。
-
-CI 位于 `.github/workflows/ci.yml`，在 GitHub Actions 免费额度（公共仓库免费）内运行：macos-15 / macos-26 双矩阵构建 + 打包，并上传 `.app` 产物。
 
 ## 技术栈
 
@@ -75,4 +71,4 @@ CI 位于 `.github/workflows/ci.yml`，在 GitHub Actions 免费额度（公共�
 
 ## 许可证
 
-[MIT](LICENSE) — 作者：Neonai & kdxiaoyi
+[MIT](LICENSE)
